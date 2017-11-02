@@ -38,9 +38,12 @@
             var dfHandler = customDeferredHandler || self.deferredHandler;
             var deferred = $q.defer();
             var data = {
-                action: 'list',
-                path: path,
-                fileExtensions: exts && exts.length ? exts : undefined
+                method: 'list',
+                id: 0,
+				params: {
+                    path: path,
+                    fileExtensions: exts && exts.length ? exts : undefined
+                }
             };
 
             self.inprocess = true;
@@ -60,13 +63,16 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'copy',
-                items: items,
-                newPath: path
+                method: 'copy',
+                id: 0,
+				params: {
+                    items: items,
+                    newPath: path
+                }
             };
 
             if (singleFilename && items.length === 1) {
-                data.singleFilename = singleFilename;
+				data.params.singleFilename = singleFilename;
             }
 
             self.inprocess = true;
@@ -85,9 +91,12 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'move',
-                items: items,
-                newPath: path
+                method: 'move',
+                id: 0,
+				params: {
+                    items: items,
+                    newPath: path
+                }
             };
             self.inprocess = true;
             self.error = '';
@@ -105,8 +114,11 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'remove',
-                items: items
+                method: 'remove',
+                id: 0,
+				params: {
+                    items: items
+                }
             };
 
             self.inprocess = true;
@@ -159,8 +171,11 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'getContent',
-                item: itemPath
+                method: 'getContent',
+                id: 0,
+				params: {
+                    item: itemPath
+                }
             };
 
             self.inprocess = true;
@@ -179,9 +194,12 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'edit',
-                item: itemPath,
-                content: content
+                method: 'edit',
+                id: 0,
+				params: {
+                    item: itemPath,
+                    content: content
+                }
             };
 
             self.inprocess = true;
@@ -201,9 +219,12 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'rename',
-                item: itemPath,
-                newItemPath: newPath
+                method: 'rename',
+                id: 0,
+				params: {
+                    item: itemPath,
+                    newItemPath: newPath
+                }
             };
             self.inprocess = true;
             self.error = '';
@@ -219,8 +240,7 @@
 
         ApiHandler.prototype.getUrl = function(apiUrl, path) {
             var data = {
-                action: 'download',
-                path: path
+                download: path
             };
             return path && [apiUrl, $httpParamSerializer(data)].join('?');
         };
@@ -252,9 +272,12 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'downloadMultiple',
-                items: items,
-                toFilename: toFilename
+                method: 'downloadMultiple',
+                id: 0,
+				params: {
+                    items: items,
+                    toFilename: toFilename
+                }
             };
             var url = [apiUrl, $httpParamSerializer(data)].join('?');
 
@@ -280,10 +303,13 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'compress',
-                items: items,
-                destination: path,
-                compressedFilename: compressedFilename
+                method: 'compress',
+                id: 0,
+				params: {
+                    items: items,
+                    destination: path,
+                    compressedFilename: compressedFilename
+                }
             };
 
             self.inprocess = true;
@@ -302,10 +328,13 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'extract',
-                item: item,
-                destination: path,
-                folderName: folderName
+                method: 'extract',
+                id: 0,
+				params: {
+                    item: item,
+                    destination: path,
+                    folderName: folderName
+                }
             };
 
             self.inprocess = true;
@@ -324,11 +353,14 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'changePermissions',
-                items: items,
-                perms: permsOctal,
-                permsCode: permsCode,
-                recursive: !!recursive
+                method: 'changePermissions',
+                id: 0,
+				params: {
+                    items: items,
+                    perms: permsOctal,
+                    permsCode: permsCode,
+                    recursive: !!recursive
+                }
             };
 
             self.inprocess = true;
@@ -347,8 +379,11 @@
             var self = this;
             var deferred = $q.defer();
             var data = {
-                action: 'createFolder',
-                newPath: path
+                method: 'createFolder',
+                id: 0,
+				params: {
+                    newPath: path
+                }
             };
 
             self.inprocess = true;
