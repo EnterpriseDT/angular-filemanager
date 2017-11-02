@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" data-ng-app="FileManagerApp">
+<head>
+  <!--
+    * Angular FileManager v1.5.1 (https://github.com/joni2back/angular-filemanager)
+    * Jonas Sciangula Street <joni2back@gmail.com>
+    * Licensed under MIT (https://github.com/joni2back/angular-filemanager/blob/master/LICENSE)
+  -->
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+  <meta charset="utf-8">
+  <title>angular-filemanager</title>
+
+  <!-- third party -->
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="bower_components/angular/angular.min.js"></script>
+    <script src="bower_components/angular-translate/angular-translate.min.js"></script>
+    <script src="bower_components/ng-file-upload/ng-file-upload.min.js"></script>
+    <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="bower_components/bootswatch/paper/bootstrap.min.css" />
+  <!-- /third party -->
+
+  <!-- Uncomment if you need to use raw source code -->
+    <script src="src/js/app.js"></script>
+    <script src="src/js/directives/directives.js"></script>
+    <script src="src/js/filters/filters.js"></script>
+    <script src="src/js/providers/config.js"></script>
+    <script src="src/js/entities/chmod.js"></script>
+    <script src="src/js/entities/item.js"></script>
+    <script src="src/js/services/apihandler.js"></script>
+    <script src="src/js/services/apimiddleware.js"></script>
+    <script src="src/js/services/filenavigator.js"></script>
+    <script src="src/js/providers/translations.js"></script>
+    <script src="src/js/controllers/main.js"></script>
+    <script src="src/js/controllers/selector-controller.js"></script>
+    <link href="src/css/animations.css" rel="stylesheet">
+    <link href="src/css/dialogs.css" rel="stylesheet">
+    <link href="src/css/main.css" rel="stylesheet">
+  <!-- -->
+
+  <!-- Comment if you need to use raw source code
+    <link href="dist/angular-filemanager.min.css" rel="stylesheet">
+    <script src="dist/angular-filemanager.min.js"></script>
+  /Comment if you need to use raw source code -->
+  
+  <script type="text/javascript">
+    (function(angular) {
+      'use strict';
+      angular.module('FileManagerApp').provider('fileManagerConfig', function() {
+
+          var values = {
+              appName: 'angular-filemanager v1.5',
+              defaultLang: 'en',
+
+              listUrl: 'index.jss',
+              uploadUrl: 'index.jss',
+              renameUrl: 'index.jss',
+              copyUrl: 'index.jss',
+              moveUrl: 'index.jss',
+              removeUrl: 'index.jss',
+              editUrl: 'index.jss',
+              getContentUrl: 'index.jss',
+              createFolderUrl: 'index.jss',
+              downloadFileUrl: 'index.jss',
+              downloadMultipleUrl: 'index.jss',
+              compressUrl: 'index.jss',
+              extractUrl: 'index.jss',
+              permissionsUrl: 'index.jss',
+              basePath: '/',
+
+              searchForm: true,
+              sidebar: true,
+              breadcrumb: true,
+              allowedActions: {
+                  upload: true,
+                  rename: true,
+                  move: true,
+                  copy: true,
+                  edit: true,
+                  changePermissions: false,
+                  compress: false,
+                  compressChooseName: false,
+                  extract: false,
+                  download: true,
+                  downloadMultiple: true,
+                  preview: true,
+                  remove: true,
+                  createFolder: true,
+                  pickFiles: false,
+                  pickFolders: false
+              },
+
+              multipleDownloadFileName: 'angular-filemanager.zip',
+              filterFileExtensions: [],
+              showExtensionIcons: true,
+              showSizeForDirectories: false,
+              useBinarySizePrefixes: false,
+              downloadFilesByAjax: true,
+              previewImagesInModal: true,
+              enablePermissionsRecursive: true,
+              compressAsync: false,
+              extractAsync: false,
+              pickCallback: null,
+
+              isEditableFilePattern: /\.(txt|diff?|patch|svg|asc|cnf|cfg|conf|html?|.html|cfm|cgi|aspx?|ini|pl|py|md|css|cs|js|jsp|log|htaccess|htpasswd|gitignore|gitattributes|env|json|atom|eml|rss|markdown|sql|xml|xslt?|sh|rb|as|bat|cmd|cob|for|ftn|frm|frx|inc|lisp|scm|coffee|php[3-6]?|java|c|cbl|go|h|scala|vb|tmpl|lock|go|yml|yaml|tsv|lst)$/i,
+              isImageFilePattern: /\.(jpe?g|gif|bmp|png|svg|tiff?)$/i,
+              isExtractableFilePattern: /\.(gz|tar|rar|g?zip)$/i,
+              tplPath: 'src/templates'
+          };
+
+          return {
+              $get: function() {
+                  return values;
+              },
+              set: function (constants) {
+                  angular.extend(values, constants);
+              }
+          };
+
+      });
+    })(angular);
+  </script>
+</head>
+
+<body class="ng-cloak">
+  <angular-filemanager></angular-filemanager>
+</body>
+</html>
