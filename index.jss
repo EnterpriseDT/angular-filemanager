@@ -1,13 +1,18 @@
+// Set to true if you want to use the full source-code (slow)
+// Set to false if you want to use the minimized source-code (fast)
+var developmentMode = false;
+
+// Handles (1) the initial index page request, and (2) file downloads
 function processRequest() {
     try {
-        // console.log("Request = " + JSON.stringify(request));
-        if (request.query.download) {
+        if (!request.query.download) {
+            response.writeUsingTemplateFile("template.html", {
+                developmentMode: developmentMode
+            });
+        } else {
             response.downloadFile = system.user.homeFolder + request.query.download;
             response.forceDownload = true;
-        } else  
-            response.writeUsingTemplateFile("template.html", {
-                homeFolder: system.user.homeFolder
-            });
+        }
     } catch (e) {
         return {
             error: e
@@ -15,6 +20,7 @@ function processRequest() {
     }
 }
 
+// Returns a list of the given directory
 function list(path, fileExtensions) {
     var items = [];
     var files = system.getFile(system.user.homeFolder + path).getFiles();
@@ -30,6 +36,8 @@ function list(path, fileExtensions) {
     }
     return items;
 }
+
+// Copies a file
 function copy(paths, toPath, singleFilename) {
     try {
         if (paths.length == 1)
@@ -51,6 +59,7 @@ function copy(paths, toPath, singleFilename) {
     }
 }
 
+// Moves a file
 function move(paths, toPath) {
     try {
         for (var i in paths) {
@@ -70,6 +79,7 @@ function move(paths, toPath) {
     }
 }
 
+// Deletes a file
 function remove(paths) {
     try {
         for (var i in paths) {
@@ -89,17 +99,18 @@ function remove(paths) {
     }
 }
 
-// this handles the upload
+// this handles the upload by returning the path at which the file should be placed
 function getUploadPath(fileName, contentType) {
-    console.log(system.user.homeFolder + "/" + fileName);
     return system.user.homeFolder + "/" + fileName;
 }
 
+// Returns the contents of a file
 function getContent(path) {
     var file = system.getFile(system.user.homeFolder + path);
     return file.readText(content);
 }
 
+// Writes the given content to a file
 function edit(path, content) {
     try {
         var file = system.getFile(system.user.homeFolder + path);
@@ -116,6 +127,7 @@ function edit(path, content) {
     }
 }
 
+// Renames a file
 function rename(fromPath, toPath) {
     try {
         var file = system.getFile(system.user.homeFolder + fromPath);
@@ -132,6 +144,7 @@ function rename(fromPath, toPath) {
     }
 }
 
+// Creates a new folder
 function createFolder(path) {
     try {
         var file = system.getFile(system.user.homeFolder + path);
@@ -148,6 +161,7 @@ function createFolder(path) {
     }
 }
 
+// Formats a date as required by the client-side code
 function formatDate(date) {
     return date.getFullYear()
         + "-" + (date.getMonth()-1)
