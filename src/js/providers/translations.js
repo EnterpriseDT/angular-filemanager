@@ -100,7 +100,9 @@
             open: 'Open',
             these_elements: 'these {{total}} elements',
             new_folder: 'New folder',
-            download_as_zip: 'Download as ZIP'
+            download_as_zip: 'Download as ZIP',
+            logout: 'Log out',
+            sure_to_logout: 'Are you sure you want to log out?'
         });
 
         $translateProvider.translations('nl', {
