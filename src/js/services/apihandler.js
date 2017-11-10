@@ -398,6 +398,28 @@
 
             return deferred.promise;
         };
+        
+        ApiHandler.prototype.getLogoutPath = function(apiUrl) {
+            var self = this;
+            var deferred = $q.defer();
+            var data = {
+                method: 'getLogoutPath',
+                id: 0,
+                params: {}
+            };
+
+            self.inprocess = true;
+            self.error = '';
+            $http.post(apiUrl, data).then(function(response) {
+                self.deferredHandler(response.data, deferred, response.status);
+            }, function(response) {
+                self.deferredHandler(response.data, deferred, response.status, $translate.instant('error_creating_folder'));
+            })['finally'](function() {
+                self.inprocess = false;
+            });
+
+            return deferred.promise;
+        };
 
         return ApiHandler;
 

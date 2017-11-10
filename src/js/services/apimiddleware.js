@@ -128,6 +128,10 @@
             var path = item.tempModel.fullPath();
             return this.apiHandler.createFolder(fileManagerConfig.createFolderUrl, path);
         };
+        
+        ApiMiddleware.prototype.getLogoutPath = function(item) {
+            return this.apiHandler.getLogoutPath(fileManagerConfig.getLogoutPathUrl);
+        };
 
         return ApiMiddleware;
 
