@@ -75,6 +75,11 @@
                                         <i class="glyphicon glyphicon-cloud-upload"></i> {{"upload_files" | translate}}
                                     </a>
                                 </li>
+                                <li role="presentation" ng-show="config.allowedActions.logout" ng-click="modal('logout')">
+                                    <a href="" role="menuitem" tabindex="-1">
+                                        <i class="glyphicon glyphicon-log-out"></i> {{"logout" | translate}}
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     </div>
