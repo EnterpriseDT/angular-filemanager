@@ -249,6 +249,8 @@ textarea.code {
 
 .upload-list {
   margin-top: 20px;
+  max-height: 457px;
+  overflow-y: auto;
 }
 
 .spinner-wrapper {
