@@ -4,24 +4,27 @@ var developmentMode = false;
 
 // Handles (1) the initial index page request, and (2) file downloads
 function processRequest() {
-    try {
-        if (!request.query.download) {
-            response.writeUsingTemplateFile("template.html", {
-                developmentMode: developmentMode
-            });
-        } else {
-            response.downloadFile = system.user.homeFolder + request.query.download;
-            response.forceDownload = true;
-        }
-    } catch (e) {
-        return {
-            error: e
-        };
+    if (request.form.destination) {  // file uploaded
+        return { success: true};
+    } else if (request.query.download) {
+        checkLogin();
+        response.downloadFile = system.user.homeFolder + request.query.download;
+        response.forceDownload = true;
+    } else {
+        response.writeUsingTemplateFile("template.html", {
+            developmentMode: developmentMode
+        });
     }
+}
+
+function checkLogin() {
+    if (system.user.isAnonymous)
+        throw "Not logged in";
 }
 
 // Returns a list of the given directory
 function list(path, fileExtensions) {
+    checkLogin();
     var items = [];
     var files = system.getFile(system.user.homeFolder + path).getFiles();
     for (var i in files) {
@@ -39,6 +42,7 @@ function list(path, fileExtensions) {
 
 // Copies a file
 function copy(paths, toPath, singleFilename) {
+    checkLogin();
     try {
         if (paths.length == 1)
             toPath += "/" + singleFilename;
@@ -61,6 +65,7 @@ function copy(paths, toPath, singleFilename) {
 
 // Moves a file
 function move(paths, toPath) {
+    checkLogin();
     try {
         for (var i in paths) {
             var path = paths[i];
@@ -81,6 +86,7 @@ function move(paths, toPath) {
 
 // Deletes a file
 function remove(paths) {
+    checkLogin();
     try {
         for (var i in paths) {
             var path = paths[i];
@@ -101,17 +107,20 @@ function remove(paths) {
 
 // this handles the upload by returning the path at which the file should be placed
 function getUploadPath(fileName, contentType) {
-    return system.user.homeFolder + "/" + fileName;
+    checkLogin();
+    return system.user.homeFolder + request.form.destination + "/" + fileName;
 }
 
 // Returns the contents of a file
 function getContent(path) {
+    checkLogin();
     var file = system.getFile(system.user.homeFolder + path);
     return file.readText(content);
 }
 
 // Writes the given content to a file
 function edit(path, content) {
+    checkLogin();
     try {
         var file = system.getFile(system.user.homeFolder + path);
         file.writeText(content);
@@ -129,6 +138,7 @@ function edit(path, content) {
 
 // Renames a file
 function rename(fromPath, toPath) {
+    checkLogin();
     try {
         var file = system.getFile(system.user.homeFolder + fromPath);
         file.moveTo(system.user.homeFolder + toPath);
@@ -146,7 +156,9 @@ function rename(fromPath, toPath) {
 
 // Creates a new folder
 function createFolder(path) {
+    checkLogin();
     try {
+        console.log(path);
         var file = system.getFile(system.user.homeFolder + path);
         file.createFolder();
         return {
