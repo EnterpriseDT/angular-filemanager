@@ -1,14 +1,14 @@
 <nav class="navbar navbar-inverse">
     <div class="container-fluid">
         <div class="row">
-            <div class="col-sm-9 col-md-10 hidden-xs">
+            <div class="col-sm-9 col-md-8 hidden-xs">
                 <div ng-show="!config.breadcrumb">
                     <a class="navbar-brand hidden-xs ng-binding" href="">angular-{{"filemanager" | translate}}</a>
                 </div>
                 <div ng-include="config.tplPath + '/current-folder-breadcrumb.html'" ng-show="config.breadcrumb">
                 </div>
             </div>
-            <div class="col-sm-3 col-md-2">
+            <div class="col-sm-3 col-md-4">
                 <div class="navbar-collapse">
                     <div class="navbar-form navbar-right text-right">
                         <div class="pull-left visible-xs" ng-if="fileNavigator.currentPath.length">
@@ -58,8 +58,20 @@
                                 <li role="presentation"><a role="menuitem" tabindex="-1" href="" ng-click="changeLanguage('pl')">Polski</a></li>
                             </ul>
                         </div>
+                        
+                        <button class="btn btn-flat btn-sm" ng-click="modal('newfolder')" ng-show="config.allowedActions.createFolder" title="{{'new_folder' | translate}}">
+                            <i class="glyphicon glyphicon-plus"></i>
+                        </button>
+                        
+                        <button class="btn btn-flat btn-sm" ng-click="modal('uploadfile')" ng-show="config.allowedActions.upload" title="{{'upload_files' | translate}}">
+                            <i class="glyphicon glyphicon-cloud-upload"></i>
+                        </button>
+                        
+                        <button class="btn btn-flat btn-sm" ng-click="modal('logout')" ng-show="config.allowedActions.logout" title="{{'logout' | translate}}">
+                            <i class="glyphicon glyphicon-log-out"></i>
+                        </button>
 
-                        <div class="btn-group">
+                        <!-- div class="btn-group">
                             <button class="btn btn-flat btn-sm dropdown-toggle" type="button" id="more" data-toggle="dropdown" aria-expanded="true">
                                 <i class="glyphicon glyphicon-option-vertical"></i>
                             </button>
@@ -75,13 +87,8 @@
                                         <i class="glyphicon glyphicon-cloud-upload"></i> {{"upload_files" | translate}}
                                     </a>
                                 </li>
-                                <li role="presentation" ng-show="config.allowedActions.logout" ng-click="modal('logout')">
-                                    <a href="" role="menuitem" tabindex="-1">
-                                        <i class="glyphicon glyphicon-log-out"></i> {{"logout" | translate}}
-                                    </a>
-                                </li>
                             </ul>
-                        </div>
+                        </div -->
                     </div>
                 </div>
             </div>
