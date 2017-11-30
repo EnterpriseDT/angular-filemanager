@@ -19,7 +19,6 @@
         $scope.viewTemplate = $storage.getItem('viewTemplate') || 'main-icons.html';
         $scope.fileList = [];
         $scope.temps = [];
-        $scope.isModalShowing = false;
 
         $scope.$watch('temps', function() {
             if ($scope.singleSelection()) {
@@ -166,15 +165,9 @@
         };
 
         $scope.modal = function(id, hide, returnElement) {
-            if ($scope.isModalShowing)
-                return;
             var element = angular.element('#' + id);
             var scope = $scope;
-            element.off('hidden.bs.modal').on('hidden.bs.modal', function () {
-                scope.isModalShowing = false;
-            });
             element.modal(hide ? 'hide' : 'show');
-            $scope.isModalShowing = !hide;
             $scope.apiMiddleware.apiHandler.error = '';
             $scope.apiMiddleware.apiHandler.asyncSuccess = false;
             return returnElement ? element : true;
@@ -335,9 +328,14 @@
         };
 
         $scope.addForUpload = function($files) {
-            if ($scope.isModalShowing)
+            var files = [];
+            $files.forEach(function(file) {
+                if (file instanceof File)
+                    files.push(file);
+            });
+            if (files.length == 0)
                 return;
-            $scope.uploadFileList = $scope.uploadFileList.concat($files);
+            $scope.uploadFileList = $scope.uploadFileList.concat(files);
             $scope.modal('uploadfile');
         };
 
@@ -355,6 +353,10 @@
                 $scope.apiMiddleware.apiHandler.error = errorMsg;
             });
         };
+
+        $scope.clearUploadFileList = function() {
+            $scope.uploadFileList = [];            
+        }
 
         $scope.getUrl = function(_item) {
             return $scope.apiMiddleware.getUrl(_item);
