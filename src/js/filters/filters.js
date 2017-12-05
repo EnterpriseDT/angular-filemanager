@@ -19,9 +19,7 @@
 
     app.filter('formatDate', ['$filter', function() {
         return function(input) {
-            return input instanceof Date ?
-                input.toISOString().substring(0, 19).replace('T', ' ') :
-                (input.toLocaleString || input.toString).apply(input);
+            return input.toLocaleString().replace(/,/, "");
         };
     }]);
 
