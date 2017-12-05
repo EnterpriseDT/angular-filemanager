@@ -16,6 +16,7 @@
         $scope.fileNavigator = new FileNavigator();
         $scope.apiMiddleware = new ApiMiddleware();
         $scope.uploadFileList = [];
+        $scope.uploading = false;
         $scope.viewTemplate = $storage.getItem('viewTemplate') || 'main-icons.html';
         $scope.fileList = [];
         $scope.temps = [];
@@ -166,7 +167,18 @@
 
         $scope.modal = function(id, hide, returnElement) {
             var element = angular.element('#' + id);
-            var scope = $scope;
+            var form = element.find('form');
+            if (!hide && form && form.attr('onclose')) {
+                var scope = $scope;
+                element.on('hidden.bs.modal', function() {
+                    element.off('hidden.bs.modal');
+                    var value = form.attr('onclose');
+                    if (scope[value] instanceof Function)
+                        scope[value].apply(this);
+                    else
+                        eval(value);
+                });
+            }
             element.modal(hide ? 'hide' : 'show');
             $scope.apiMiddleware.apiHandler.error = '';
             $scope.apiMiddleware.apiHandler.asyncSuccess = false;
@@ -315,6 +327,11 @@
             });
         };
 
+        $scope.cancelRename = function() {
+            var item = $scope.singleSelection();
+            item.tempModel.name = item.model.name;
+        }
+
         $scope.createFolder = function() {
             var item = $scope.singleSelection();
             var name = item.tempModel.name;
@@ -344,18 +361,22 @@
         };
 
         $scope.uploadFiles = function() {
+            $scope.uploading = true;
             $scope.apiMiddleware.upload($scope.uploadFileList, $scope.fileNavigator.currentPath).then(function() {
                 $scope.fileNavigator.refresh();
                 $scope.uploadFileList = [];
+                $scope.uploading = false;
                 $scope.modal('uploadfile', true);
             }, function(data) {
                 var errorMsg = data.result && data.result.error || $translate.instant('error_uploading_files');
                 $scope.apiMiddleware.apiHandler.error = errorMsg;
+                $scope.uploading = false;
             });
         };
 
-        $scope.clearUploadFileList = function() {
-            $scope.uploadFileList = [];            
+        $scope.cancelUpload = function() {
+            if (!$scope.uploading)
+                $scope.uploadFileList = [];            
         }
 
         $scope.getUrl = function(_item) {
