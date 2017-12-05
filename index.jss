@@ -22,6 +22,10 @@ function checkLogin() {
         throw "Not logged in";
 }
 
+function getLogoutPath() {
+    return system.site.logoutPath;
+}
+
 // Returns a list of the given directory
 function list(path, fileExtensions) {
     checkLogin();
@@ -175,10 +179,15 @@ function createFolder(path) {
 
 // Formats a date as required by the client-side code
 function formatDate(date) {
-    return date.getFullYear()
-        + "-" + (date.getMonth()-1)
-        + "-" + date.getDate()
-        + " " + date.getHours()
-        + ":" + date.getMinutes()
-        + ":" + date.getSeconds()
+    return date.getUTCFullYear()
+        + "-" + padNumber(date.getUTCMonth()-1)
+        + "-" + padNumber(date.getUTCDate())
+        + " " + padNumber(date.getUTCHours())
+        + ":" + padNumber(date.getUTCMinutes())
+        + ":" + padNumber(date.getUTCSeconds())
+        + " UTC";
+}
+
+function padNumber(i) {
+    return i < 10 ? "0" + i : i;
 }
