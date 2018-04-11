@@ -1,16 +1,22 @@
 // Set to true if you want to use the full source-code (slow)
 // Set to false if you want to use the minimized source-code (fast)
-var developmentMode = false;
+var developmentMode = true;
 
-// Handles (1) the initial index page request, and (2) file downloads
+// Handles (1) the initial index page request, (2) file downloads, (3) file uploads
 function processRequest() {
-    if (request.form.destination) {  // file uploaded
+    // make sure we're HTTPS
+    if (request.uri.indexOf("http:") === 0) {
+        response.redirectUrl = request.uri.replace("http:", "https:");
+        return;
+    }
+    if (request.form.destination) {  // file upload (CompleteFTP will manage this)
+        console.log("request.form.destination = " + request.form.destination);
         return { success: true};
-    } else if (request.query.download) {
+    } else if (request.query.download) {  // file download
         checkLogin();
         response.downloadFile = system.user.homeFolder + request.query.download;
         response.forceDownload = true;
-    } else {
+    } else {  // show file-manager
         response.writeUsingTemplateFile("template.html", {
             developmentMode: developmentMode
         });
@@ -19,11 +25,37 @@ function processRequest() {
 
 function checkLogin() {
     if (system.user.isAnonymous)
-        throw "Not logged in";
+        throw { code: 1, message: "Not logged in" };
 }
 
-function getLogoutPath() {
-    return system.site.logoutPath;
+function login(username, password) {
+    try {
+        system.login(username, password);
+    } catch (err) {
+        console.error("Login failed: " + err);
+        throw err;
+    }
+}
+
+function logout() {
+    try {
+        system.logout();
+    } catch (err) {
+        console.error("Logout failed: " + err);
+        throw err;
+    }
+}
+
+// Returns general information
+function getInfo() {
+    checkLogin();
+    return {
+        serverName: system.server.name,
+        siteName: system.site.name,
+        welcomeMessage: system.site.welcomeMessage,
+        userName: system.user.userName,
+        homeFolder: system.user.apparentHomeFolder
+    };
 }
 
 // Returns a list of the given directory
@@ -37,54 +69,85 @@ function list(path, fileExtensions) {
             name: file.name,
             rights: "drwxr-xr-x",
             size: file.length,
-            date: formatDate(file.modifiedTime),
+            date: file.modifiedTime.toUTCString(),
             type: file.isFile ? "file" : "dir"
         })
     }
     return items;
 }
 
-// Copies a file
-function copy(paths, toPath, singleFilename) {
-    checkLogin();
-    try {
-        if (paths.length == 1)
-            toPath += "/" + singleFilename;
-        for (var i in paths) {
-            var path = paths[i];
-            var file = system.getFile(system.user.homeFolder + path);
-            file.copyTo(system.user.homeFolder + toPath);
-        }
-        return {
-            success: true,
-            error: null
-        }
-    } catch (e) {
-        return {
-            success: false,
-            error: e
-        }
-    }
+// Copies files
+function share(paths) {
+    console.dump(paths);
+    var urls = [];
+    paths.forEach(function(path) {
+        // call ListShares to ensure the Shares folder has been created
+        system.executeCustomCommand("ShareAPI.ListShares", [""]);
+
+        var file = system.getFile(system.user.homeFolder + path);
+        var sharePath = system.user.homeFolder + "/Shares/" + file.name;
+        file.copyTo(sharePath);
+
+        var jsonResponse = system.executeCustomCommand("ShareAPI.ShareFile", [file.name, file.length]);
+        var response = JSON.parse(jsonResponse)
+        urls.push({ name: file.name, url: response.result });
+    });
+    return urls;
 }
 
-// Moves a file
-function move(paths, toPath) {
+// Copies files
+function copy(paths, toPath, singleFilename, overwrite) {
+    return moveOrCopy(false, paths, toPath, singleFilename, overwrite);
+}
+
+// Moves files
+function move(paths, toPath, overwrite) {
+    return moveOrCopy(true, paths, toPath, null, overwrite);
+}
+
+// Moves or copies files
+function moveOrCopy(move, paths, toPath, singleFilename, overwrite) {
     checkLogin();
     try {
-        for (var i in paths) {
-            var path = paths[i];
-            var file = system.getFile(system.user.homeFolder + path);
-            file.moveTo(system.user.homeFolder + toPath);
+        if (singleFilename && paths.length > 1) {
+            console.log("singleFilename = " + singleFilename);
+            return { success: false, error: "Can't move/copy multiple files/folders to one target" };
         }
-        return {
-            success: true,
-            error: null
+
+        var filePairs = [];
+        paths.forEach(function(fromPath) {
+            var fromFile = system.getFile(system.user.homeFolder + fromPath);
+            var toFullPath = system.user.homeFolder + toPath;
+            if (toFullPath[toFullPath.length - 1] != '/')
+                toFullPath += '/';
+            toFullPath += (singleFilename ? singleFilename : fromFile.name);
+            var toFile = system.getFile(toFullPath);
+            filePairs.push({
+                from: fromFile,
+                to: toFile
+            });
+        });
+
+        if (!overwrite) {
+            var existing = [];
+            filePairs.forEach(function(filePair) {
+                if (filePair.to.exists())
+                    existing.push(filePair.to.fullPath);
+            });
+            if (existing.length > 0)
+                return { success: false, error: "Files/folders already exist", paths: existing };
         }
+
+        filePairs.forEach(function(filePair) {
+            if (filePair.to.exists())
+                filePair.to.remove();
+            var operation = filePair.from[move ? "moveTo" : "copyTo"]
+            operation(filePair.to.fullPath);
+        });
+        return { success: true, error: null };
     } catch (e) {
-        return {
-            success: false,
-            error: e
-        }
+        console.error(e);
+        return { success: false, error: e };
     }
 }
 
@@ -177,15 +240,25 @@ function createFolder(path) {
     }
 }
 
-// Formats a date as required by the client-side code
-function formatDate(date) {
-    return date.getUTCFullYear()
-        + "-" + padNumber(date.getUTCMonth()-1)
-        + "-" + padNumber(date.getUTCDate())
-        + " " + padNumber(date.getUTCHours())
-        + ":" + padNumber(date.getUTCMinutes())
-        + ":" + padNumber(date.getUTCSeconds())
-        + " UTC";
+// Creates a new folder
+function createFile(path, content) {
+    checkLogin();
+    try {
+        console.log(path);
+        var file = system.getFile(system.user.homeFolder + path);
+        file.createFile();
+        if (content)
+            file.writeText(content);
+        return {
+            success: true,
+            error: null
+        }
+    } catch (e) {
+        return {
+            success: false,
+            error: e
+        }
+    }
 }
 
 function padNumber(i) {

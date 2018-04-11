@@ -13,7 +13,7 @@ body {
   margin-bottom: 0;
   border: 0;
   border-radius: 0;
-  color: #fff;
+  /* color: #fff; */
 }
 
 .navbar .navbar-collapse {
@@ -215,6 +215,11 @@ textarea.code {
 
 .dropdown-menu > li > a {
   padding: 6px 20px;
+}
+
+.dropdown-menu > li > span {
+  padding: 6px 20px;
+  color: #666666;
 }
 
 .dropdown-menu > li > a > i {

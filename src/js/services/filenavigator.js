@@ -3,13 +3,17 @@
     angular.module('FileManagerApp').service('fileNavigator', [
         'apiMiddleware', 'fileManagerConfig', 'item', function (ApiMiddleware, fileManagerConfig, Item) {
 
-        var FileNavigator = function() {
-            this.apiMiddleware = new ApiMiddleware();
+        var FileNavigator = function(authenticationErrorHandler) {
+            this.authenticationErrorHandler = authenticationErrorHandler;
+            this.apiMiddleware = new ApiMiddleware(authenticationErrorHandler);
             this.requesting = false;
             this.fileList = [];
             this.currentPath = this.getBasePath();
             this.history = [];
             this.error = '';
+            this.homeFolder = '';
+            this.userName = '';
+            this.overwrite = false;
 
             this.onRefresh = function() {};
         };
@@ -21,27 +25,33 @@
 
         FileNavigator.prototype.deferredHandler = function(data, deferred, code, defaultMsg) {
             if (!data || typeof data !== 'object') {
-                this.error = 'Error %s - Bridge response error, please check the API docs or this ajax response.'.replace('%s', code);
+                this.error = 'Error %s - Server connection lost.'.replace('%s', code);
             }
-            if (code == 404) {
-                this.error = 'Error 404 - Backend bridge is not working, please check the ajax response.';
+            if (code === 404) {
+                this.error = 'Error 404 - Server file-manager not found.';
             }
-            if (code == 200) {
+            if (code === 200 && !data.error) {
                 this.error = null;
             }
             if (!this.error && data.result && data.result.error) {
                 this.error = data.result.error;
             }
             if (!this.error && data.error) {
+                if (data.error.code === 1)
+                    this.authenticationErrorHandler();
                 this.error = data.error.message;
             }
             if (!this.error && defaultMsg) {
                 this.error = defaultMsg;
             }
-            if (this.error) {
+            if (this.error)
                 return deferred.reject(data);
-            }
-            return deferred.resolve(data);
+            else
+                return deferred.resolve(data);
+        };
+
+        FileNavigator.prototype.getInfo = function() {
+            return this.apiMiddleware.getInfo(this.deferredHandler.bind(this));
         };
 
         FileNavigator.prototype.list = function() {
@@ -56,15 +66,29 @@
             var path = self.currentPath.join('/');
             self.requesting = true;
             self.fileList = [];
-            return self.list().then(function(data) {
-                self.fileList = (data.result || []).map(function(file) {
-                    return new Item(file, self.currentPath);
-                });
-                self.buildTree(path);
-                self.onRefresh();
-            }).finally(function() {
-                self.requesting = false;
-            });
+            var info;
+            return self.getInfo()
+                .then(
+                    function(data) {
+                        info = data.result;
+                        this.homeFolder = info.homeFolder;
+                        this.userName = info.userName;
+                        return self.list();
+                    }.bind(this), function(error) {
+                        this.authenticationErrorHandler();
+                    }.bind(this))
+                .then(
+                    function(data) {
+                        self.fileList = (data && data.result || []).map(function(file) {
+                            return new Item(file, self.currentPath);
+                        });
+                        self.buildTree(path);
+                        self.onRefresh();
+                    })
+                .finally(
+                    function() {
+                        self.requesting = false;
+                    });
         };
         
         FileNavigator.prototype.buildTree = function(path) {
@@ -120,9 +144,8 @@
 
         FileNavigator.prototype.folderClick = function(item) {
             this.currentPath = [];
-            if (item && item.isFolder()) {
+            if (item && item.isFolder())
                 this.currentPath = item.model.fullPath().split('/').splice(1);
-            }
             this.refresh();
         };
 

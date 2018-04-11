@@ -1,8 +1,8 @@
 (function(angular) {
     'use strict';
     angular.module('FileManagerApp').controller('FileManagerCtrl', [
-        '$scope', '$rootScope', '$window', '$translate', 'fileManagerConfig', 'item', 'fileNavigator', 'apiMiddleware',
-        function($scope, $rootScope, $window, $translate, fileManagerConfig, Item, FileNavigator, ApiMiddleware) {
+        '$scope', '$rootScope', '$window', '$translate', '$timeout', 'fileManagerConfig', 'item', 'fileNavigator', 'apiMiddleware',
+        function($scope, $rootScope, $window, $translate, $timeout, fileManagerConfig, Item, FileNavigator, ApiMiddleware) {
 
         var $storage = $window.localStorage;
         $scope.config = fileManagerConfig;
@@ -13,8 +13,11 @@
             $scope.predicate[1] = predicate;
         };
         $scope.query = '';
-        $scope.fileNavigator = new FileNavigator();
-        $scope.apiMiddleware = new ApiMiddleware();
+        var authenticationErrorHandler = function() {
+            $scope.onAuthenticationError();
+        };
+        $scope.fileNavigator = new FileNavigator(authenticationErrorHandler);
+        $scope.apiMiddleware = new ApiMiddleware(authenticationErrorHandler);
         $scope.uploadFileList = [];
         $scope.uploading = false;
         $scope.viewTemplate = $storage.getItem('viewTemplate') || 'main-icons.html';
@@ -56,7 +59,7 @@
 
         $scope.selectOrUnselect = function(item, $event) {
             var indexInTemp = $scope.temps.indexOf(item);
-            var isRightClick = $event && $event.which == 3;
+            var isRightClick = $event && $event.which === 3;
 
             if ($event && $event.target.hasAttribute('prevent')) {
                 $scope.temps = [];
@@ -98,6 +101,8 @@
         };
 
         $scope.singleSelection = function() {
+            if (!$scope.temps || $scope.temps.length === 0)
+                $scope.prepareNewFolder();
             return $scope.temps.length === 1 && $scope.temps[0];
         };
 
@@ -219,6 +224,40 @@
             return $scope.apiMiddleware.downloadMultiple($scope.temps);
         };
 
+        $scope.openUrl = function() {
+            var item = $scope.singleSelection();
+            var baseUrl = window.location.protocol + '//' + window.location.host;
+            $window.open(baseUrl + item.model.fullPath(), '_blank');
+        };
+
+        $scope.getShareURL = function() {
+            if (!navigator.share) {
+                alert('Sorry, sharing is not available on this platform.');
+                return;
+            }
+            $scope.apiMiddleware.share($scope.temps)
+                .then(function(data) {
+                    var shares = $scope.fileNavigator.shares = data.result;
+                    var baseUrl = window.location.protocol + '//' + window.location.host;
+                    shares.forEach(function(share) { share.url = baseUrl + share.url + '/' + share.name; });
+                    $scope.modal('share');
+                });
+        };
+
+        $scope.share = function() {
+            if (!$scope.fileNavigator.shares || $scope.fileNavigator.shares.length === 0)
+                return;
+            var share = $scope.fileNavigator.shares[0];
+            var shareInfo = {
+                title: share.name,
+                text: share.name,
+                url: share.url
+            };
+            navigator.share(shareInfo)
+            .then(function() { console.log('Successful share'); })
+            .catch(function(error) { console.log('Error sharing', error); });
+        };
+
         $scope.copy = function() {
             var item = $scope.singleSelection();
             if (item) {
@@ -233,10 +272,18 @@
                     return false;
                 }
             }
-            $scope.apiMiddleware.copy($scope.temps, $rootScope.selectedModalPath).then(function() {
+            $scope.apiMiddleware.copy($scope.temps, $rootScope.selectedModalPath, $scope.fileNavigator.overwrite).then(function() {
                 $scope.fileNavigator.refresh();
                 $scope.modal('copy', true);
+                $scope.fileNavigator.overwrite = false;
             });
+        };
+
+        $scope.cancelCopy = function() {
+            var item = $scope.singleSelection();
+            if (item && item.model)
+                    item.tempModel.name = item.model.name;
+            $scope.fileNavigator.overwrite = false;
         };
 
         $scope.compress = function() {
@@ -294,10 +341,29 @@
                 $scope.modal('remove', true);
             });
         };
+
+        $scope.onAuthenticationError = function() {
+            // doesn't work without the timeout here - race condition?
+            $timeout(function() {
+                $scope.modal('login');
+            }, 300);
+        };
+        
+        $scope.login = function() {
+            $scope.apiMiddleware.login($scope.username, $scope.password).then(function() {
+                $scope.password = '';
+                $scope.fileNavigator.refresh().then(function() {
+                    $scope.modal('login', true);
+                });
+            }, function(err) {
+            });
+        };
         
         $scope.logout = function() {
-            $scope.apiMiddleware.getLogoutPath($scope.temps).then(function(logoutPath) {
-                $window.location.href = logoutPath.result;
+            $scope.apiMiddleware.logout($scope.temps).then(function() {
+                $scope.username = '';
+                $scope.modal('logout', true);
+                $scope.fileNavigator.refresh();
             });
         };
 
@@ -307,10 +373,15 @@
                 $scope.apiMiddleware.apiHandler.error = $translate.instant('error_cannot_move_same_path');
                 return false;
             }
-            $scope.apiMiddleware.move($scope.temps, $rootScope.selectedModalPath).then(function() {
+            $scope.apiMiddleware.move($scope.temps, $rootScope.selectedModalPath, $scope.fileNavigator.overwrite).then(function() {
                 $scope.fileNavigator.refresh();
                 $scope.modal('move', true);
+                $scope.fileNavigator.overwrite = false;
             });
+        };
+
+        $scope.cancelMove = function() {
+            $scope.fileNavigator.overwrite = false;
         };
 
         $scope.rename = function() {
@@ -330,7 +401,7 @@
         $scope.cancelRename = function() {
             var item = $scope.singleSelection();
             item.tempModel.name = item.model.name;
-        }
+        };
 
         $scope.createFolder = function() {
             var item = $scope.singleSelection();
@@ -344,13 +415,25 @@
             });
         };
 
+        $scope.createFile = function() {
+            var item = $scope.singleSelection();
+            var name = item.tempModel.name;
+            if (!name || $scope.fileNavigator.fileNameExists(name)) {
+                return $scope.apiMiddleware.apiHandler.error = $translate.instant('error_invalid_filename');
+            }
+            $scope.apiMiddleware.createFile(item).then(function() {
+                $scope.fileNavigator.refresh();
+                $scope.modal('newfile', true);
+            });
+        };
+
         $scope.addForUpload = function($files) {
             var files = [];
             $files.forEach(function(file) {
                 if (file instanceof File)
                     files.push(file);
             });
-            if (files.length == 0)
+            if (files.length === 0)
                 return;
             $scope.uploadFileList = $scope.uploadFileList.concat(files);
             $scope.modal('uploadfile');
@@ -377,7 +460,7 @@
         $scope.cancelUpload = function() {
             if (!$scope.uploading)
                 $scope.uploadFileList = [];            
-        }
+        };
 
         $scope.getUrl = function(_item) {
             return $scope.apiMiddleware.getUrl(_item);

@@ -19,7 +19,7 @@
 
     app.filter('formatDate', ['$filter', function() {
         return function(input) {
-            return input.toLocaleString().replace(/,/, "");
+            return input.toLocaleString().replace(/,/, '');
         };
     }]);
 

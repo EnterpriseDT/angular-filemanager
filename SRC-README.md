@@ -46,7 +46,10 @@ Donate by Bitcoin wallet: ```147ca6be-a6a5-4012-8209-8ec94ff340b8```
 
 ### Use in your existing project
 **1) Install and use**
-```bower install --save angular-filemanager```
+```
+npm install bower                           # if bower is not already installed
+node node_modules\bower\bin\bower install   # get dependencies
+```
 
 **2) Include the dependencies in your project**
 ```html
@@ -126,7 +129,13 @@ You can do many things by extending the configuration. Like hide the sidebar or 
 
 ### Contribute
 To contribute to the project you can simply fork this repo. To build a minified version, you can simply run the Gulp
-task `gulp build`. The minified/uglified files are created in the `dist` folder.
+task:
+
+```
+npm install gulp                            # if gulp is not already installed
+node node_modules\gulp\bin\gulp.js build    # build project
+```
+ The minified/uglified files are created in the `dist` folder.
 
 ### Versioning
 For transparency into our release cycle and in striving to maintain backward compatibility, angular-filemanager is maintained under [the Semantic Versioning guidelines](http://semver.org/).

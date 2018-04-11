@@ -27,7 +27,7 @@
             var path = item.model.fullPath();
             return $scope.temps.find(function(item) {
                 var itemPath = item.model.fullPath();
-                if (path == itemPath) {
+                if (path === itemPath) {
                     return true;
                 }
                 /*

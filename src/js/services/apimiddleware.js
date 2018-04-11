@@ -3,8 +3,9 @@
     angular.module('FileManagerApp').service('apiMiddleware', ['$window', 'fileManagerConfig', 'apiHandler', 
         function ($window, fileManagerConfig, ApiHandler) {
 
-        var ApiMiddleware = function() {
-            this.apiHandler = new ApiHandler();
+        var ApiMiddleware = function(authenticationErrorHandler) {
+            this.authenticationErrorHandler = authenticationErrorHandler;
+            this.apiHandler = new ApiHandler(authenticationErrorHandler);
         };
 
         ApiMiddleware.prototype.getPath = function(arrayPath) {
@@ -21,19 +22,28 @@
             return item && item.model.fullPath();
         };
 
+        ApiMiddleware.prototype.getInfo = function(customDeferredHandler) {
+            return this.apiHandler.getInfo(fileManagerConfig.getInfoUrl, customDeferredHandler);
+        };
+
         ApiMiddleware.prototype.list = function(path, customDeferredHandler) {
             return this.apiHandler.list(fileManagerConfig.listUrl, this.getPath(path), customDeferredHandler);
         };
 
-        ApiMiddleware.prototype.copy = function(files, path) {
+        ApiMiddleware.prototype.share = function(files, customDeferredHandler) {
             var items = this.getFileList(files);
-            var singleFilename = items.length === 1 ? files[0].tempModel.name : undefined;
-            return this.apiHandler.copy(fileManagerConfig.copyUrl, items, this.getPath(path), singleFilename);
+            return this.apiHandler.share(fileManagerConfig.shareUrl, items, customDeferredHandler);
         };
 
-        ApiMiddleware.prototype.move = function(files, path) {
+        ApiMiddleware.prototype.copy = function(files, path, overwrite) {
             var items = this.getFileList(files);
-            return this.apiHandler.move(fileManagerConfig.moveUrl, items, this.getPath(path));
+            var singleFilename = items.length === 1 ? files[0].tempModel.name : undefined;
+            return this.apiHandler.copy(fileManagerConfig.copyUrl, items, this.getPath(path), singleFilename, overwrite);
+        };
+
+        ApiMiddleware.prototype.move = function(files, path, overwrite) {
+            var items = this.getFileList(files);
+            return this.apiHandler.move(fileManagerConfig.moveUrl, items, this.getPath(path), overwrite);
         };
 
         ApiMiddleware.prototype.remove = function(files) {
@@ -128,9 +138,23 @@
             var path = item.tempModel.fullPath();
             return this.apiHandler.createFolder(fileManagerConfig.createFolderUrl, path);
         };
+
+        ApiMiddleware.prototype.createFile = function(item) {
+            var path = item.tempModel.fullPath();
+            var content = item.tempModel.content;
+            return this.apiHandler.createFile(fileManagerConfig.createFileUrl, path, content);
+        };
         
-        ApiMiddleware.prototype.getLogoutPath = function(item) {
-            return this.apiHandler.getLogoutPath(fileManagerConfig.getLogoutPathUrl);
+        ApiMiddleware.prototype.logout = function(item) {
+            return this.apiHandler.logout(fileManagerConfig.logoutUrl);
+        };
+        
+        ApiMiddleware.prototype.login = function(username, password) {
+            return this.apiHandler.login(fileManagerConfig.loginUrl, username, password);
+        };
+        
+        ApiMiddleware.prototype.logout = function(item) {
+            return this.apiHandler.logout(fileManagerConfig.logoutUrl);
         };
 
         return ApiMiddleware;

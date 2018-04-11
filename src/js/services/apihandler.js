@@ -5,7 +5,8 @@
 
         $http.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
-        var ApiHandler = function() {
+        var ApiHandler = function(authenticationErrorHandler) {
+            this.authenticationErrorHandler = authenticationErrorHandler;
             this.inprocess = false;
             this.asyncSuccess = false;
             this.error = '';
@@ -13,15 +14,17 @@
 
         ApiHandler.prototype.deferredHandler = function(data, deferred, code, defaultMsg) {
             if (!data || typeof data !== 'object') {
-                this.error = 'Error %s - Bridge response error, please check the API docs or this ajax response.'.replace('%s', code);
+                this.error = 'Error %s - Server connection lost.'.replace('%s', code);
             }
-            if (code == 404) {
-                this.error = 'Error 404 - Backend bridge is not working, please check the ajax response.';
+            if (code === 404) {
+                this.error = 'Error 404 - Server file-manager not found.';
             }
             if (data.result && data.result.error) {
                 this.error = data.result.error;
             }
             if (!this.error && data.error) {
+                if (data.error.code === 1)
+                    this.authenticationErrorHandler();
                 this.error = data.error.message;
             }
             if (!this.error && defaultMsg) {
@@ -33,14 +36,40 @@
             return deferred.resolve(data);
         };
 
+        ApiHandler.prototype.getInfo = function(apiUrl, customDeferredHandler) {
+            // console.log("API call: getInfo");
+            var self = this;
+            var dfHandler = customDeferredHandler || self.deferredHandler;
+            var deferred = $q.defer();
+            var data = {
+                method: 'getInfo',
+                id: 0,
+                params: {
+                }
+            };
+
+            self.inprocess = true;
+            self.error = '';
+
+            $http.post(apiUrl, data).then(function(response) {
+                dfHandler(response.data, deferred, response.status);
+            }, function(response) {
+                dfHandler(response.data, deferred, response.status, 'Unknown error getting info, check the response');
+            })['finally'](function() {
+                self.inprocess = false;
+            });
+            return deferred.promise;
+        };
+
         ApiHandler.prototype.list = function(apiUrl, path, customDeferredHandler, exts) {
+            // console.log("API call: list");
             var self = this;
             var dfHandler = customDeferredHandler || self.deferredHandler;
             var deferred = $q.defer();
             var data = {
                 method: 'list',
                 id: 0,
-				params: {
+                params: {
                     path: path,
                     fileExtensions: exts && exts.length ? exts : undefined
                 }
@@ -59,20 +88,47 @@
             return deferred.promise;
         };
 
-        ApiHandler.prototype.copy = function(apiUrl, items, path, singleFilename) {
+        ApiHandler.prototype.share = function(apiUrl, items) {
+            // console.log("API call: share");
+            var self = this;
+            var deferred = $q.defer();
+            var data = {
+                method: 'share',
+                id: 0,
+                params: {
+                    items: items
+                }
+            };
+
+            self.inprocess = true;
+            self.error = '';
+            $http.post(apiUrl, data).then(function(response) {
+                self.deferredHandler(response.data, deferred, response.status);
+            }, function(response) {
+                self.deferredHandler(response.data, deferred, response.status, $translate.instant('error_sharing'));
+            })['finally'](function() {
+                self.inprocess = false;
+            });
+            return deferred.promise;
+        };
+
+        ApiHandler.prototype.copy = function(apiUrl, items, path, singleFilename, overwrite) {
+            // console.log("API call: copy");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'copy',
                 id: 0,
-				params: {
+                params: {
                     items: items,
-                    newPath: path
+                    newPath: path,
+                    singleFilename: null,
+                    overwrite: overwrite
                 }
             };
 
             if (singleFilename && items.length === 1) {
-				data.params.singleFilename = singleFilename;
+                data.params.singleFilename = singleFilename;
             }
 
             self.inprocess = true;
@@ -87,15 +143,17 @@
             return deferred.promise;
         };
 
-        ApiHandler.prototype.move = function(apiUrl, items, path) {
+        ApiHandler.prototype.move = function(apiUrl, items, path, overwrite) {
+            // console.log("API call: move");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'move',
                 id: 0,
-				params: {
+                params: {
                     items: items,
-                    newPath: path
+                    newPath: path,
+                    overwrite: overwrite
                 }
             };
             self.inprocess = true;
@@ -111,12 +169,13 @@
         };
 
         ApiHandler.prototype.remove = function(apiUrl, items) {
+            // console.log("API call: remove");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'remove',
                 id: 0,
-				params: {
+                params: {
                     items: items
                 }
             };
@@ -134,6 +193,7 @@
         };
 
         ApiHandler.prototype.upload = function(apiUrl, destination, files) {
+            // console.log("API call: upload");
             var self = this;
             var deferred = $q.defer();
             self.inprocess = true;
@@ -168,12 +228,13 @@
         };
 
         ApiHandler.prototype.getContent = function(apiUrl, itemPath) {
+            // console.log("API call: getContent");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'getContent',
                 id: 0,
-				params: {
+                params: {
                     item: itemPath
                 }
             };
@@ -191,12 +252,13 @@
         };
 
         ApiHandler.prototype.edit = function(apiUrl, itemPath, content) {
+            // console.log("API call: edit");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'edit',
                 id: 0,
-				params: {
+                params: {
                     item: itemPath,
                     content: content
                 }
@@ -216,12 +278,13 @@
         };
 
         ApiHandler.prototype.rename = function(apiUrl, itemPath, newPath) {
+            // console.log("API call: rename");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'rename',
                 id: 0,
-				params: {
+                params: {
                     item: itemPath,
                     newItemPath: newPath
                 }
@@ -246,6 +309,7 @@
         };
 
         ApiHandler.prototype.download = function(apiUrl, itemPath, toFilename, downloadByAjax, forceNewWindow) {
+            // console.log("API call: download");
             var self = this;
             var url = this.getUrl(apiUrl, itemPath);
 
@@ -269,12 +333,13 @@
         };
 
         ApiHandler.prototype.downloadMultiple = function(apiUrl, items, toFilename, downloadByAjax, forceNewWindow) {
+            // console.log("API call: downloadMultiple");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'downloadMultiple',
                 id: 0,
-				params: {
+                params: {
                     items: items,
                     toFilename: toFilename
                 }
@@ -300,12 +365,13 @@
         };
 
         ApiHandler.prototype.compress = function(apiUrl, items, compressedFilename, path) {
+            // console.log("API call: compress");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'compress',
                 id: 0,
-				params: {
+                params: {
                     items: items,
                     destination: path,
                     compressedFilename: compressedFilename
@@ -325,12 +391,13 @@
         };
 
         ApiHandler.prototype.extract = function(apiUrl, item, folderName, path) {
+            // console.log("API call: extract");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'extract',
                 id: 0,
-				params: {
+                params: {
                     item: item,
                     destination: path,
                     folderName: folderName
@@ -350,12 +417,13 @@
         };
 
         ApiHandler.prototype.changePermissions = function(apiUrl, items, permsOctal, permsCode, recursive) {
+            // console.log("API call: changePermissions");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'changePermissions',
                 id: 0,
-				params: {
+                params: {
                     items: items,
                     perms: permsOctal,
                     permsCode: permsCode,
@@ -376,12 +444,13 @@
         };
 
         ApiHandler.prototype.createFolder = function(apiUrl, path) {
+            // console.log("API call: createFolder");
             var self = this;
             var deferred = $q.defer();
             var data = {
                 method: 'createFolder',
                 id: 0,
-				params: {
+                params: {
                     newPath: path
                 }
             };
@@ -398,14 +467,18 @@
 
             return deferred.promise;
         };
-        
-        ApiHandler.prototype.getLogoutPath = function(apiUrl) {
+
+        ApiHandler.prototype.createFile = function(apiUrl, path, content) {
+            // console.log("API call: createFile");
             var self = this;
             var deferred = $q.defer();
             var data = {
-                method: 'getLogoutPath',
+                method: 'createFile',
                 id: 0,
-                params: {}
+                params: {
+                    newPath: path,
+                    content: content
+                }
             };
 
             self.inprocess = true;
@@ -413,7 +486,53 @@
             $http.post(apiUrl, data).then(function(response) {
                 self.deferredHandler(response.data, deferred, response.status);
             }, function(response) {
-                self.deferredHandler(response.data, deferred, response.status, $translate.instant('error_creating_folder'));
+                self.deferredHandler(response.data, deferred, response.status, $translate.instant('error_creating_file'));
+            })['finally'](function() {
+                self.inprocess = false;
+            });
+
+            return deferred.promise;
+        };
+        
+        ApiHandler.prototype.login = function(apiUrl, username, password) {
+            // console.log("API call: login");
+            var self = this;
+            var deferred = $q.defer();
+            var data = {
+                method: 'login',
+                id: 0,
+                params: [username, password]
+            };
+
+            self.inprocess = true;
+            self.error = '';
+            $http.post(apiUrl, data).then(function(response) {
+                self.deferredHandler(response.data, deferred, response.status);
+            }, function(response) {
+                self.deferredHandler(response.data, deferred, response.status, $translate.instant('error_logging_in'));
+            })['finally'](function() {
+                self.inprocess = false;
+            });
+
+            return deferred.promise;
+        };
+        
+        ApiHandler.prototype.logout = function(apiUrl, username, password) {
+            // console.log("API call: logout");
+            var self = this;
+            var deferred = $q.defer();
+            var data = {
+                method: 'logout',
+                id: 0,
+                params: []
+            };
+
+            self.inprocess = true;
+            self.error = '';
+            $http.post(apiUrl, data).then(function(response) {
+                self.deferredHandler(response.data, deferred, response.status);
+            }, function(response) {
+                self.deferredHandler(response.data, deferred, response.status, $translate.instant('error_logging_out'));
             })['finally'](function() {
                 self.inprocess = false;
             });

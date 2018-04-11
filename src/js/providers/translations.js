@@ -50,6 +50,7 @@
             create_folder: 'Create folder',
             create: 'Create',
             folder_name: 'Folder name',
+            file_name: 'File name',
             upload: 'Upload',
             change_permissions: 'Change permissions',
             change: 'Change',
@@ -71,6 +72,7 @@
             view_item: 'View item',
             remove: 'Delete',
             edit: 'Edit',
+            save: 'Save',
             copy: 'Copy',
             rename: 'Rename',
             extract: 'Extract',
@@ -80,9 +82,12 @@
             error_deleting: 'An error occurred deleting the file or folder',
             error_renaming: 'An error occurred renaming the file',
             error_copying: 'An error occurred copying the file',
+            error_sharing: 'An error occurred sharing the file',
             error_compressing: 'An error occurred compressing the file or folder',
             error_extracting: 'An error occurred extracting the file',
             error_creating_folder: 'An error occurred creating the folder',
+            error_logging_out: 'An error occurred logging out',
+            error_logging_in: 'An error occurred logging in',
             error_getting_content: 'An error occurred getting the content of the file',
             error_changing_perms: 'An error occurred changing the permissions of the file',
             error_uploading_files: 'An error occurred uploading files',
@@ -100,9 +105,16 @@
             open: 'Open',
             these_elements: 'these {{total}} elements',
             new_folder: 'New folder',
+            new_file: 'New file',
             download_as_zip: 'Download as ZIP',
+            user: 'User',
+            username: 'User-name',
+            password: 'Password',
+            login: 'Log in',
             logout: 'Log out',
-            sure_to_logout: 'Are you sure you want to log out?'
+            share: 'Share',
+            sure_to_logout: 'Are you sure you want to log out?',
+            overwrite: 'Overwrite destination?'
         });
 
         $translateProvider.translations('nl', {
@@ -197,7 +209,9 @@
             open: 'Openen',
             these_elements: 'Deze {{total}} elementen',
             new_folder: 'Nieuwe map',
-            download_as_zip: 'Download als ZIP'
+            download_as_zip: 'Download als ZIP',
+            logout: 'Uitloggen',
+            sure_to_logout: 'Weet je zeker dat je wilt uitloggen?'
         });
 
         $translateProvider.translations('he', {
@@ -295,7 +309,9 @@
             preview: 'הצגת פריט',
             open: 'פתח',
             new_folder: 'תיקיה חדשה',
-            download_as_zip: 'להוריד כמו'
+            download_as_zip: 'להוריד כמו',
+            logout: 'להתנתק',
+            sure_to_logout: 'האם אתה בטוח שאתה רוצה להתנתק?'
         });
 
         $translateProvider.translations('pt', {
@@ -394,7 +410,9 @@
             open: 'Abrir',
             these_elements: 'estes {{total}} elements',
             new_folder: 'Nova pasta',
-            download_as_zip: 'Download como ZIP'
+            download_as_zip: 'Download como ZIP',
+            logout: 'Sair',
+            sure_to_logout: 'Tem certeza que deseja sair?'
         });
 
         $translateProvider.translations('es', {
@@ -493,7 +511,9 @@
             open: 'Abrir',
             these_elements: 'estos {{total}} elementos',
             new_folder: 'Nueva carpeta',
-            download_as_zip: 'Descargar como ZIP'
+            download_as_zip: 'Descargar como ZIP',
+            logout: 'Cerrar sesión',
+            sure_to_logout: '¿Seguro que desea cerrar la sesión?'
         });
 
         $translateProvider.translations('fr', {
@@ -592,7 +612,9 @@
             open: 'Ouvrir',
             these_elements: 'ces {{total}} éléments',
             new_folder: 'Nouveau dossier',
-            download_as_zip: 'Télécharger comme ZIP'
+            download_as_zip: 'Télécharger comme ZIP',
+            logout: 'Connectez - Out',
+            sure_to_logout: 'Êtes-vous sûr de vouloir vous déconnecter?'
         });
 
         $translateProvider.translations('de', {
@@ -691,7 +713,9 @@
             open: 'Öffnen',
             these_elements: 'diese {{total}} elemente',
             new_folder: 'Neuer ordner',
-            download_as_zip: 'Download als ZIP'
+            download_as_zip: 'Download als ZIP',
+            logout: 'Ausloggen',
+            sure_to_logout: 'Sind Sie sicher, dass Sie sich abmelden wollen?'
         });
 
         $translateProvider.translations('sk', {
@@ -790,7 +814,9 @@
             open: 'Otvoriť',
             these_elements: 'týchto {{total}} prvkov',
             new_folder: 'Nový priečinok',
-            download_as_zip: 'Stiahnuť ako ZIP'
+            download_as_zip: 'Stiahnuť ako ZIP',
+            logout: 'Odhlásiť sa',
+            sure_to_logout: 'Ste si istí, že chcete odhlásiť?'
         });
 
         $translateProvider.translations('zh_cn', {
@@ -889,7 +915,9 @@
             open: '打开',
             these_elements: '共 {{total}} 个',
             new_folder: '新文件夹',
-            download_as_zip: '下载的ZIP'
+            download_as_zip: '下载的ZIP',
+            logout: '登出',
+            sure_to_logout: '你确定要注销？'
         });
 
         $translateProvider.translations('zh_tw', {
@@ -988,7 +1016,9 @@
             open: '開啟',
             these_elements: '共 {{total}} 個',
             new_folder: '新資料匣',
-            download_as_zip: '以ZIP下載'
+            download_as_zip: '以ZIP下載',
+            logout: '登出',
+            sure_to_logout: '你确定要注销？'
         });
 
         $translateProvider.translations('ru', {
@@ -1087,7 +1117,9 @@
             open: 'Открыть',
             these_elements: 'всего {{total}} елементов',
             new_folder: 'Новая папка',
-            download_as_zip: 'Download as ZIP'
+            download_as_zip: 'Download as ZIP',
+            logout: 'Выйти',
+            sure_to_logout: 'Вы действительно хотите выйти?'
         });
 
         $translateProvider.translations('ua', {
@@ -1186,7 +1218,9 @@
             open: 'Відкрити',
             these_elements: 'усього {{total}} елементів',
             new_folder: 'Нова папка',
-            download_as_zip: 'Download as ZIP'
+            download_as_zip: 'Завантажити як ZIP',
+            logout: 'Вийти',
+            sure_to_logout: 'Ви впевнені, що хочете вийти?'
         });
 
         $translateProvider.translations('tr', {
@@ -1285,7 +1319,9 @@
             open: 'Aç',
             these_elements: '{{total}} eleman',
             new_folder: 'Yeni Klasör',
-            download_as_zip: 'ZIP olarak indir'
+            download_as_zip: 'ZIP olarak indir',
+            logout: 'Çıkış Yap',
+            sure_to_logout: 'Eğer Çıkış yapmak istediğinizden emin misiniz?'
         });
 
         $translateProvider.translations('fa', {
@@ -1384,7 +1420,9 @@
             open: 'باز کردن',
             these_elements: 'تعداد {{total}} مورد',
             new_folder: 'پوشه جدید',
-            download_as_zip: 'به عنوان فایل فشرده دانلود شود'
+            download_as_zip: 'به عنوان فایل فشرده دانلود شود',
+            logout: 'خروج',
+            sure_to_logout: 'آیا برای خارج شدن مطمئن هستید؟'
         });
 
         $translateProvider.translations('pl', {
@@ -1483,7 +1521,9 @@
             open: 'Otwórz',
             these_elements: 'te {{total}} elementy?',
             new_folder: 'Nowy folder',
-            download_as_zip: 'Pobierz jako ZIP'
+            download_as_zip: 'Pobierz jako ZIP',
+            logout: 'Wyloguj',
+            sure_to_logout: 'Czy na pewno chcesz się wylogować?'
         });
 
         $translateProvider.translations('it', {
@@ -1581,7 +1621,9 @@
             open: 'Apri',
             these_elements: 'questi {{total}} elementi',
             new_folder: 'Nuova cartella',
-            download_as_zip: 'Scarica come file ZIP'
+            download_as_zip: 'Scarica come file ZIP',
+            logout: 'Disconnettersi',
+            sure_to_logout: 'Sei sicuro di voler uscire?'
         });
 
     }]);
