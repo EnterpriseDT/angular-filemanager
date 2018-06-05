@@ -1,8 +1,8 @@
 (function(angular) {
     'use strict';
     angular.module('FileManagerApp').controller('FileManagerCtrl', [
-        '$scope', '$rootScope', '$window', '$translate', '$timeout', 'fileManagerConfig', 'item', 'fileNavigator', 'apiMiddleware',
-        function($scope, $rootScope, $window, $translate, $timeout, fileManagerConfig, Item, FileNavigator, ApiMiddleware) {
+        '$scope', '$rootScope', '$window', '$translate', '$timeout', '$document', 'fileManagerConfig', 'item', 'fileNavigator', 'apiMiddleware',
+        function($scope, $rootScope, $window, $translate, $timeout, $document, fileManagerConfig, Item, FileNavigator, ApiMiddleware) {
 
         var $storage = $window.localStorage;
         $scope.config = fileManagerConfig;
@@ -23,6 +23,7 @@
         $scope.viewTemplate = $storage.getItem('viewTemplate') || 'main-icons.html';
         $scope.fileList = [];
         $scope.temps = [];
+        $scope.isNativeShareSupported = !!navigator.share;
 
         $scope.$watch('temps', function() {
             if ($scope.singleSelection()) {
@@ -101,8 +102,8 @@
         };
 
         $scope.singleSelection = function() {
-            if (!$scope.temps || $scope.temps.length === 0)
-                $scope.prepareNewFolder();
+            // if (!$scope.temps || $scope.temps.length === 0)
+            //     $scope.prepareNewFolder();
             return $scope.temps.length === 1 && $scope.temps[0];
         };
 
@@ -120,8 +121,24 @@
 
         $scope.prepareNewFolder = function() {
             var item = new Item(null, $scope.fileNavigator.currentPath);
+            item.model.name = $scope.getNewName("New folder*");
             $scope.temps = [item];
             return item;
+        };
+
+        $scope.prepareNewFile = function() {
+            var item = new Item(null, $scope.fileNavigator.currentPath);
+            item.model.name = $scope.getNewName("New file*.txt");
+            $scope.temps = [item];
+            return item;
+        };
+        
+        $scope.getNewName = function(template) {
+            for (var i=1;; i++) {
+                var name = template.replace("*", i > 1 ? " " + i : "");
+                if (!$scope.fileNavigator.fileList.find((item) => item.model.name == name))
+                    return name;
+            }
         };
 
         $scope.smartClick = function(item) {
@@ -196,8 +213,8 @@
         };
 
         $scope.isInThisPath = function(path) {
-            var currentPath = $scope.fileNavigator.currentPath.join('/') + '/';
-            return currentPath.indexOf(path + '/') !== -1;
+            var p = $scope.fileNavigator.currentPath.join('/') + '/';
+            return p.indexOf(path + '/') !== -1;
         };
 
         $scope.edit = function() {
@@ -227,12 +244,12 @@
         $scope.openUrl = function() {
             var item = $scope.singleSelection();
             var baseUrl = window.location.protocol + '//' + window.location.host;
-            $window.open(baseUrl + item.model.fullPath(), '_blank');
+            $window.open(baseUrl + $scope.fileNavigator.homeFolder + item.model.fullPath(), '_blank');
         };
 
         $scope.getShareURL = function() {
-            if (!navigator.share) {
-                alert('Sorry, sharing is not available on this platform.');
+            if (!$scope.fileNavigator.sharingEnabled) {
+                $scope.alert("no_sharing_title", null, "no_sharing_text");
                 return;
             }
             $scope.apiMiddleware.share($scope.temps)
@@ -256,6 +273,12 @@
             navigator.share(shareInfo)
             .then(function() { console.log('Successful share'); })
             .catch(function(error) { console.log('Error sharing', error); });
+        };
+
+        $scope.copyShareLink = function(textAreaID) {
+            var copyText = $document[0].getElementById(textAreaID);
+            copyText.select();
+            $document[0].execCommand("copy");
         };
 
         $scope.copy = function() {
@@ -335,6 +358,15 @@
             });
         };
 
+        $scope.showRemove = function() {
+            if (!$scope.fileNavigator.canRemove) {
+                $scope.alert("no_permission_title", {operation:$translate.instant("remove")},
+                    "no_permission_text", {operation:$translate.instant("remove").toLowerCase()});
+                return;
+            }
+            $scope.modal('remove');
+        };
+
         $scope.remove = function() {
             $scope.apiMiddleware.remove($scope.temps).then(function() {
                 $scope.fileNavigator.refresh();
@@ -350,6 +382,8 @@
         };
         
         $scope.login = function() {
+            if (!$scope.username || !$scope.password)
+                return;
             $scope.apiMiddleware.login($scope.username, $scope.password).then(function() {
                 $scope.password = '';
                 $scope.fileNavigator.refresh().then(function() {
@@ -367,10 +401,19 @@
             });
         };
 
+        $scope.showMove = function() {
+            if (!$scope.fileNavigator.canRename) {
+                $scope.alert("no_permission_title", {operation:$translate.instant("move")},
+                    "no_permission_text", {operation:$translate.instant("move").toLowerCase()});
+                return;
+            }
+            $scope.modalWithPathSelector('move');
+        };
+
         $scope.move = function() {
             var anyItem = $scope.singleSelection() || $scope.temps[0];
             if (anyItem && validateSamePath(anyItem)) {
-                $scope.apiMiddleware.apiHandler.error = $translate.instant('error_cannot_move_same_path');
+                $scope.apiMiddleware.apiHandler.error = $translate.instant('select_destination');
                 return false;
             }
             $scope.apiMiddleware.move($scope.temps, $rootScope.selectedModalPath, $scope.fileNavigator.overwrite).then(function() {
@@ -382,6 +425,15 @@
 
         $scope.cancelMove = function() {
             $scope.fileNavigator.overwrite = false;
+        };
+
+        $scope.showRename = function() {
+            if (!$scope.fileNavigator.canRename) {
+                $scope.alert("no_permission_title", {operation:$translate.instant("rename")},
+                    "no_permission_text", {operation:$translate.instant("rename").toLowerCase()});
+                return;
+            }
+            $scope.modal('rename');
         };
 
         $scope.rename = function() {
@@ -427,33 +479,54 @@
             });
         };
 
-        $scope.addForUpload = function($files) {
-            var files = [];
-            $files.forEach(function(file) {
-                if (file instanceof File)
-                    files.push(file);
-            });
-            if (files.length === 0)
-                return;
-            $scope.uploadFileList = $scope.uploadFileList.concat(files);
-            $scope.modal('uploadfile');
-        };
-
         $scope.removeFromUpload = function(index) {
             $scope.uploadFileList.splice(index, 1);
         };
 
+        $scope.alert = function(title, titleArgs, text, textArgs) {
+            $scope.message = {
+                title: $translate.instant(title, titleArgs),
+                text: $translate.instant(text, textArgs)
+            };
+            $scope.modal('alert');
+        };
+
+        $scope.upload = function($files) {
+            var files = [];
+            if ($files) {
+                $files.forEach(function(file) {
+                    if (file instanceof File)
+                        files.push(file);
+                });
+                if (files.length === 0)
+                    return;
+            }
+            if (!$scope.fileNavigator.canUpload) {
+                $scope.alert("no_permission_title", {operation:$translate.instant("upload")},
+                    "no_permission_text", {operation:$translate.instant("upload").toLowerCase()});
+                return;
+            }
+            $scope.uploadFileList = $scope.uploadFileList.concat(files);
+            $scope.modal('uploadfile');
+        };
+
         $scope.uploadFiles = function() {
             $scope.uploading = true;
-            $scope.apiMiddleware.upload($scope.uploadFileList, $scope.fileNavigator.currentPath).then(function() {
+            $scope.apiMiddleware.upload($scope.uploadFileList, $scope.fileNavigator.currentPath, $scope.fileNavigator.overwrite).then(function() {
                 $scope.fileNavigator.refresh();
                 $scope.uploadFileList = [];
                 $scope.uploading = false;
+                $scope.fileNavigator.overwrite = false;
                 $scope.modal('uploadfile', true);
             }, function(data) {
-                var errorMsg = data.result && data.result.error || $translate.instant('error_uploading_files');
+                var errorMsg;
+                if (data.code)
+                    errorMsg = $translate.instant(data.code);
+                else
+                    errorMsg = data.result && data.result.error || $translate.instant('error_uploading_files');
                 $scope.apiMiddleware.apiHandler.error = errorMsg;
                 $scope.uploading = false;
+                $scope.fileNavigator.overwrite = false;
             });
         };
 

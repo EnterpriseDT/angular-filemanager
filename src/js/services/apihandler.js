@@ -13,26 +13,23 @@
         };
 
         ApiHandler.prototype.deferredHandler = function(data, deferred, code, defaultMsg) {
-            if (!data || typeof data !== 'object') {
+            if (!data || typeof data !== 'object')
                 this.error = 'Error %s - Server connection lost.'.replace('%s', code);
-            }
-            if (code === 404) {
+            if (code === 404)
                 this.error = 'Error 404 - Server file-manager not found.';
-            }
-            if (data.result && data.result.error) {
+            if (data.result && data.result.error)
                 this.error = data.result.error;
-            }
-            if (!this.error && data.error) {
+            if (this && !this.error && data.error) {
+                this.error = data.error.message;
                 if (data.error.code === 1)
                     this.authenticationErrorHandler();
-                this.error = data.error.message;
             }
-            if (!this.error && defaultMsg) {
+            if (code == 500)
+                this.authenticationErrorHandler();
+            if (this && !this.error && defaultMsg)
                 this.error = defaultMsg;
-            }
-            if (this.error) {
+            if (this && this.error)
                 return deferred.reject(data);
-            }
             return deferred.resolve(data);
         };
 
@@ -61,6 +58,47 @@
             return deferred.promise;
         };
 
+        File.combine = function(path1, path2) {
+            if (!path1 && path2)
+                return path2;
+            if (path1 && !path2)
+                return path1;
+            if (!path1 && !path2)
+                throw "Cannot join null paths";
+            if (!path1[path1.length-1]=='/')
+                path1 += '/';
+            if (path2[0]=='/')
+                path2 = path.substr(1);
+            return path1 + path2;
+        }
+
+        ApiHandler.prototype.exists = function(apiUrl, files, path, customDeferredHandler) {
+            var self = this;
+            var dfHandler = customDeferredHandler || self.deferredHandler;
+            var deferred = $q.defer();
+            var filePaths = files.map((f) => File.combine(path, !!f.path ? f.path : f.name));
+            var data = {
+                method: 'exists',
+                id: 0,
+                params: {
+                    filePaths: filePaths
+                }
+            };
+
+            self.inprocess = true;
+            self.error = '';
+
+            $http.post(apiUrl, data).then(function(response) {
+                self.inprocess = false;
+                dfHandler(response.data, deferred, response.status);
+            }, function(response) {
+                self.inprocess = false;
+                dfHandler(response.data, deferred, response.status, 'Unknown error checking existence, check the response');
+            })['finally'](function() {
+            });
+            return deferred.promise;
+        };
+
         ApiHandler.prototype.list = function(apiUrl, path, customDeferredHandler, exts) {
             // console.log("API call: list");
             var self = this;
@@ -79,11 +117,12 @@
             self.error = '';
 
             $http.post(apiUrl, data).then(function(response) {
+                self.inprocess = false;
                 dfHandler(response.data, deferred, response.status);
             }, function(response) {
+                self.inprocess = false;
                 dfHandler(response.data, deferred, response.status, 'Unknown error listing, check the response');
             })['finally'](function() {
-                self.inprocess = false;
             });
             return deferred.promise;
         };
@@ -215,9 +254,10 @@
                 }).then(function (data) {
                     self.deferredHandler(data.data, deferred, data.status);
                 }, function (data) {
-                    self.deferredHandler(data.data, deferred, data.status, 'Unknown error uploading files');
+                    var message = self.getUploadErrorMessage(data.status, data.statusText);
+                    self.deferredHandler({result:{error:message}}, deferred, data.status, message);
                 }, function (evt) {
-                    self.progress = Math.min(100, parseInt(100.0 * evt.loaded / evt.total)) - 1;
+                    self.progress = Math.max(0, Math.min(100, parseInt(100.0 * evt.loaded / evt.total)) - 1);
                 })['finally'](function() {
                     self.inprocess = false;
                     self.progress = 0;
@@ -225,6 +265,31 @@
             }
 
             return deferred.promise;
+        };
+
+        ApiHandler.prototype.getUploadErrorMessage = function(statusCode, statusText) {
+            var messageCode;
+            switch (statusCode) {
+                case 401:
+                case 403:
+                    if (statusText.indexOf("filter"))
+                        messageCode = "error_filetype_not_allowed";
+                    else
+                        messageCode = "error_permission_denied";
+                    break;
+                case 404:
+                    messageCode = "error_file_not_found";
+                    break;
+                case 408:
+                    messageCode = "error_timeout";
+                    break;
+                case 500:
+                     messageCode = "error_not_logged_in";
+                     break;
+                default:
+                    messageCode = "error_uploading_files";
+            }
+            return $translate.instant(messageCode);
         };
 
         ApiHandler.prototype.getContent = function(apiUrl, itemPath) {

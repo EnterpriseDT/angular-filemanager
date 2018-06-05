@@ -15,7 +15,7 @@
         angular.element('#context-menu').hide();
     });
 
-    angular.element(window.document).on('contextmenu', '.main-navigation .table-files tr.item-list:has("td"), .item-list', function(e) {
+    angular.element(window.document).on('contextmenu', '.main-navigation .table-files tr.item-list:has("td"), .item-list, .main', function(e) {
         var menu = angular.element('#context-menu');
 
         if (e.pageX >= window.innerWidth - menu.width()) {

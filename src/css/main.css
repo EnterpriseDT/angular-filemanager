@@ -327,15 +327,15 @@ table th > a:focus {
   overflow-y: auto;
 }
 
+/* The view should fill all available vertical space */
+angular-filemanager > div,.row,.main,.sidebar {
+  height: 100%;
+}
+
 @media (min-width: 768px) {
   .main {
     padding-right: 0;
     padding-left: 0;
-  }
-
-  /* The view should fill all available vertical space */
-  angular-filemanager > div,.row,.main,.sidebar {
-    height: 100%;
   }
 
   .container-fluid {

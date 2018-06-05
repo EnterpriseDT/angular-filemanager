@@ -38,6 +38,10 @@
             return this.model.type === 'dir';
         };
 
+        Item.prototype.isFile = function() {
+            return this.model.type === 'file';
+        };
+
         Item.prototype.isEditable = function() {
             return !this.isFolder() && fileManagerConfig.isEditableFilePattern.test(this.model.name);
         };

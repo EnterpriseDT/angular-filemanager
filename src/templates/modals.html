@@ -86,7 +86,6 @@
             <div class="modal-body">
               <label class="radio">{{'enter_new_name_for' | translate}} <b>{{singleSelection() && singleSelection().model.name}}</b></label>
               <input class="form-control" ng-model="singleSelection().tempModel.name" autofocus="autofocus">
-
               <div ng-include data-src="'error-bar'" class="clearfix"></div>
             </div>
             <div class="modal-footer">
@@ -304,7 +303,7 @@
                 {{"files_will_uploaded_to" | translate}} 
                 <b>/{{fileNavigator.currentPath.join('/')}}</b>
               </label>
-              <button class="btn btn-default btn-block" ng-disabled="$parent.uploading" ngf-select="$parent.addForUpload($files)" ngf-multiple="true">
+              <button class="btn btn-default btn-block" ng-disabled="$parent.uploading" ngf-select="$parent.upload($files)" ngf-multiple="true" ngf-allow-dir="true" ngf-include-dir="true">
                 {{"select_files" | translate}}
               </button>
               
@@ -318,6 +317,12 @@
                     <p class="list-group-item-text">{{uploadFile.size | humanReadableFileSize}}</p>
                   </li>
                 </ul>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" ng-model="fileNavigator.overwrite" id="overwrite_{{$id}}">
+                <label class="form-check-label" for="overwrite_{{$id}}">
+                  {{'overwrite' | translate}}
+                </label>
               </div>
               <div ng-include data-src="'error-bar'" class="clearfix"></div>
             </div>
@@ -425,15 +430,15 @@
   </div>
 </div>
 
-<div class="modal animated fadeIn" id="login">
+<div class="modal animated fadeIn" id="login" data-backdrop="static" data-keyboard="false">
   <div class="modal-dialog">
     <div class="modal-content">
     <form ng-submit="login()">
       <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">
+        <!-- button type="button" class="close" data-dismiss="modal">
             <span aria-hidden="true">&times;</span>
             <span class="sr-only">{{"close" | translate}}</span>
-        </button>
+        </button -->
         <h4 class="modal-title">{{"login" | translate}}</h4>
       </div>
       <div class="modal-body">
@@ -444,7 +449,7 @@
         <div ng-include data-src="'error-bar'" class="clearfix"></div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="apiMiddleware.apiHandler.inprocess">{{"cancel" | translate}}</button>
+        <!-- button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="apiMiddleware.apiHandler.inprocess">{{"cancel" | translate}}</button -->
         <button type="submit" class="btn btn-primary" ng-disabled="apiMiddleware.apiHandler.inprocess" autofocus="autofocus">{{"login" | translate}}</button>
       </div>
       </form>
@@ -489,12 +494,41 @@
         <h4 class="modal-title">{{"share" | translate}}</h4>
       </div>
       <div class="modal-body">
-        <a ng-repeat="share in fileNavigator.shares" target="_blank" href="{{share.url}}">{{share.name}}</a>
+        {{"share_link" | translate}}
+
+        <div ng-repeat="share in fileNavigator.shares">
+            <div class="btn-group">
+                <button type="button" class="btn btn-basic">{{share.name | strLimit : 30}}</button>
+                <textarea style="width:1px;height:1px;opacity:0" id="sharelink_{{$id}}">{{share.url}}</textarea>
+                <button type="button" class="btn btn-info" ng-click="copyShareLink('sharelink_' + $id)">
+                  <i class="glyphicon glyphicon-copy"></i>
+                  {{"copy" | translate}}</button>
+              </div>
+        </div>
         <div ng-include data-src="'error-bar'" class="clearfix"></div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="apiMiddleware.apiHandler.inprocess">{{"cancel" | translate}}</button>
-        <button type="submit" class="btn btn-primary" ng-disabled="apiMiddleware.apiHandler.inprocess" autofocus="autofocus">{{"share" | translate}}</button>
+          <button type="button" class="btn btn-primary" ng-show="!isNativeShareSupported" data-dismiss="modal" ng-disabled="apiMiddleware.apiHandler.inprocess" autofocus="autofocus">{{"ok" | translate}}</button>
+        <button type="submit" class="btn btn-primary" ng-show="isNativeShareSupported" ng-disabled="apiMiddleware.apiHandler.inprocess" autofocus="autofocus">{{"share" | translate}}</button>
+        <button type="button" class="btn btn-default" ng-show="isNativeShareSupported" data-dismiss="modal" ng-disabled="apiMiddleware.apiHandler.inprocess">{{"cancel" | translate}}</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="alert">
+  <div class="modal-dialog">
+    <div class="modal-content">
+    <form>
+      <div class="modal-header">
+        <h4 class="modal-title">{{message.title}}</h4>
+      </div>
+      <div class="modal-body">
+        {{message.text}}
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary" data-dismiss="modal" autofocus="autofocus">{{"ok" | translate}}</button>
       </div>
       </form>
     </div>
@@ -513,7 +547,7 @@
           <div class="like-code mr5">
             <b>{{"destination" | translate}}:</b> {{ getSelectedPath() }}
           </div>
-          <a href="" class="label label-primary" ng-click="openNavigator(fileNavigator.currentPath)" ng-disabled="apiMiddleware.apiHandler.inprocess">
+          <a href="" class="label label-primary" ng-click="openNavigator(getSelectedPath())" ng-disabled="apiMiddleware.apiHandler.inprocess">
             {{'change' | translate}}
           </a>
           <div class="form-check">

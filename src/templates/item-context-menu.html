@@ -7,7 +7,7 @@
             </a>
         </li>
 
-        <li ng-show="singleSelection() && !singleSelection().isFolder()">
+        <li ng-show="singleSelection() && singleSelection().isFile()">
             <a href="" tabindex="-1" ng-click="openUrl()">
                 <i class="glyphicon glyphicon-open"></i> {{'open' | translate}}
             </a>
@@ -38,13 +38,13 @@
         </li>
 
         <li ng-show="config.allowedActions.rename && singleSelection()">
-            <a href="" tabindex="-1" ng-click="modal('rename')">
+            <a href="" tabindex="-1" ng-click="showRename()">
                 <i class="glyphicon glyphicon-edit"></i> {{'rename' | translate}}
             </a>
         </li>
 
         <li ng-show="config.allowedActions.move">
-            <a href="" tabindex="-1" ng-click="modalWithPathSelector('move')">
+            <a href="" tabindex="-1" ng-click="showMove()">
                 <i class="glyphicon glyphicon-arrow-right"></i> {{'move' | translate}}
             </a>
         </li>
@@ -55,7 +55,7 @@
             </a>
         </li>
 
-        <li ng-show="config.allowedActions.share && !selectionHas('dir')">
+        <li ng-show="config.allowedActions.share && fileNavigator.sharingEnabled && !selectionHas('dir')">
             <a href="" tabindex="-1" ng-click="getShareURL()">
                 <i class="glyphicon glyphicon-share"></i> {{'share' | translate}}
             </a>
@@ -88,7 +88,7 @@
         <li class="divider" ng-show="config.allowedActions.remove"></li>
         
         <li ng-show="config.allowedActions.remove">
-            <a href="" tabindex="-1" ng-click="modal('remove')">
+            <a href="" tabindex="-1" ng-click="showRemove()">
                 <i class="glyphicon glyphicon-trash"></i> {{'remove' | translate}}
             </a>
         </li>
@@ -99,6 +99,11 @@
         <li ng-show="config.allowedActions.createFolder">
             <a href="" tabindex="-1" ng-click="modal('newfolder') && prepareNewFolder()">
                 <i class="glyphicon glyphicon-plus"></i> {{'new_folder' | translate}}
+            </a>
+        </li>
+        <li ng-show="config.allowedActions.createFile">
+            <a href="" tabindex="-1" ng-click="modal('newfile') && prepareNewFile()">
+                <i class="glyphicon glyphicon-plus"></i> {{'new_file' | translate}}
             </a>
         </li>
         <li ng-show="config.allowedActions.upload">

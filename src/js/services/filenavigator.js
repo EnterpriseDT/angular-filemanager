@@ -8,11 +8,15 @@
             this.apiMiddleware = new ApiMiddleware(authenticationErrorHandler);
             this.requesting = false;
             this.fileList = [];
+            this.canUpload = false;
+            this.canRename = false;
+            this.canRemove = false;
             this.currentPath = this.getBasePath();
             this.history = [];
             this.error = '';
             this.homeFolder = '';
             this.userName = '';
+            this.sharingEnabled = false;
             this.overwrite = false;
 
             this.onRefresh = function() {};
@@ -27,24 +31,24 @@
             if (!data || typeof data !== 'object') {
                 this.error = 'Error %s - Server connection lost.'.replace('%s', code);
             }
-            if (code === 404) {
+            if (this && !this.error && code === 404) {
                 this.error = 'Error 404 - Server file-manager not found.';
             }
             if (code === 200 && !data.error) {
                 this.error = null;
             }
-            if (!this.error && data.result && data.result.error) {
+            if (this && !this.error && data.result && data.result.error) {
                 this.error = data.result.error;
             }
-            if (!this.error && data.error) {
+            if (this && !this.error && data.error) {
+                this.error = data.error.message;
                 if (data.error.code === 1)
                     this.authenticationErrorHandler();
-                this.error = data.error.message;
             }
-            if (!this.error && defaultMsg) {
+            if (this && !this.error && defaultMsg) {
                 this.error = defaultMsg;
             }
-            if (this.error)
+            if (this && this.error)
                 return deferred.reject(data);
             else
                 return deferred.resolve(data);
@@ -73,13 +77,18 @@
                         info = data.result;
                         this.homeFolder = info.homeFolder;
                         this.userName = info.userName;
+                        this.sharingEnabled = info.sharingEnabled;
                         return self.list();
                     }.bind(this), function(error) {
                         this.authenticationErrorHandler();
                     }.bind(this))
                 .then(
                     function(data) {
-                        self.fileList = (data && data.result || []).map(function(file) {
+                        self.canUpload = (data && data.result && data.result.canWrite || false);
+                        self.canRemove = (data && data.result && data.result.canRemove || false);
+                        self.canRename = (data && data.result && data.result.canRename || false);
+                        var files = (data && data.result && data.result.files || []);
+                        self.fileList = files.map(function(file) {
                             return new Item(file, self.currentPath);
                         });
                         self.buildTree(path);

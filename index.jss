@@ -1,3 +1,6 @@
+// Set to true to redirect HTTP connections to HTTPS (only if HTTPS is enabled)
+var forceHttps = true;
+
 // Set to true if you want to use the full source-code (slow)
 // Set to false if you want to use the minimized source-code (fast)
 var developmentMode = true;
@@ -5,15 +8,17 @@ var developmentMode = true;
 // Handles (1) the initial index page request, (2) file downloads, (3) file uploads
 function processRequest() {
     // make sure we're HTTPS
-    if (request.uri.indexOf("http:") === 0) {
-        response.redirectUrl = request.uri.replace("http:", "https:");
-        return;
+    if (forceHttps && request.uri.indexOf("http:") === 0) {
+        if (system.site.httpsEnabled) {
+            response.redirectUrl = request.uri.replace("http:", "https:");
+            return;
+        } else
+            console.warn("Cannot redirect to HTTPS because HTTPS is not enabled on this site.")
     }
     if (request.form.destination) {  // file upload (CompleteFTP will manage this)
-        console.log("request.form.destination = " + request.form.destination);
         return { success: true};
     } else if (request.query.download) {  // file download
-        checkLogin();
+        system.checkLogin();
         response.downloadFile = system.user.homeFolder + request.query.download;
         response.forceDownload = true;
     } else {  // show file-manager
@@ -21,11 +26,6 @@ function processRequest() {
             developmentMode: developmentMode
         });
     }
-}
-
-function checkLogin() {
-    if (system.user.isAnonymous)
-        throw { code: 1, message: "Not logged in" };
 }
 
 function login(username, password) {
@@ -48,21 +48,42 @@ function logout() {
 
 // Returns general information
 function getInfo() {
-    checkLogin();
+    system.checkLogin();
     return {
         serverName: system.server.name,
         siteName: system.site.name,
         welcomeMessage: system.site.welcomeMessage,
         userName: system.user.userName,
-        homeFolder: system.user.apparentHomeFolder
+        homeFolder: system.user.apparentHomeFolder,
+        sharingEnabled: system.site.sharingEnabled && system.user.sharingEnabled
     };
+}
+
+function exists(filesPaths) {
+    system.checkLogin();
+    var existingFiles = [];
+    filesPaths.forEach(function(f) {
+        if (!f)
+            continue;
+        if (f[0] != '/')
+            f = '/' + f;
+        var file = system.getFile(system.user.homeFolder + f);
+        if (file.exists())
+            existingFiles.push(file.fullPath);
+    });
+    return existingFiles;
 }
 
 // Returns a list of the given directory
 function list(path, fileExtensions) {
-    checkLogin();
+    system.checkLogin();
     var items = [];
-    var files = system.getFile(system.user.homeFolder + path).getFiles();
+    var folder = system.getFile(system.user.homeFolder + path);
+    if (!folder.exists())
+        throw "error_file_not_found";
+    if (!folder.isFolder)
+        throw "error_not_folder";
+    var files = folder.getFiles();
     for (var i in files) {
         var file = files[i];
         items.push({
@@ -73,24 +94,37 @@ function list(path, fileExtensions) {
             type: file.isFile ? "file" : "dir"
         })
     }
-    return items;
+    return {
+        canWrite: folder.canWrite,
+        canRemove: folder.canRemove,
+        canRename: folder.canRename,
+        files: items
+    };
 }
 
 // Copies files
 function share(paths) {
-    console.dump(paths);
+    system.checkLogin();
     var urls = [];
     paths.forEach(function(path) {
+        console.log("1");
         // call ListShares to ensure the Shares folder has been created
         system.executeCustomCommand("ShareAPI.ListShares", [""]);
+        console.log("2");
 
         var file = system.getFile(system.user.homeFolder + path);
+        console.log("3");
         var sharePath = system.user.homeFolder + "/Shares/" + file.name;
+        console.log("4");
         file.copyTo(sharePath);
+        console.log("5");
 
         var jsonResponse = system.executeCustomCommand("ShareAPI.ShareFile", [file.name, file.length]);
+        console.log("6");
         var response = JSON.parse(jsonResponse)
+        console.log("7");
         urls.push({ name: file.name, url: response.result });
+        console.log("8");
     });
     return urls;
 }
@@ -107,12 +141,10 @@ function move(paths, toPath, overwrite) {
 
 // Moves or copies files
 function moveOrCopy(move, paths, toPath, singleFilename, overwrite) {
-    checkLogin();
+    system.checkLogin();
     try {
-        if (singleFilename && paths.length > 1) {
-            console.log("singleFilename = " + singleFilename);
-            return { success: false, error: "Can't move/copy multiple files/folders to one target" };
-        }
+        if (singleFilename && paths.length > 1)
+            throw "Can't move/copy multiple files/folders to one target";
 
         var filePairs = [];
         paths.forEach(function(fromPath) {
@@ -122,6 +154,8 @@ function moveOrCopy(move, paths, toPath, singleFilename, overwrite) {
                 toFullPath += '/';
             toFullPath += (singleFilename ? singleFilename : fromFile.name);
             var toFile = system.getFile(toFullPath);
+            if (overwrite && isAncestor(toFile, fromFile))
+                throw "Can't overwrite parent folder";
             filePairs.push({
                 from: fromFile,
                 to: toFile
@@ -134,8 +168,10 @@ function moveOrCopy(move, paths, toPath, singleFilename, overwrite) {
                 if (filePair.to.exists())
                     existing.push(filePair.to.fullPath);
             });
-            if (existing.length > 0)
-                return { success: false, error: "Files/folders already exist", paths: existing };
+            if (existing.length == 1)
+                throw "File/folder already exists";
+            else if (existing.length > 1)
+                throw "Files/folders already exist";
         }
 
         filePairs.forEach(function(filePair) {
@@ -146,14 +182,24 @@ function moveOrCopy(move, paths, toPath, singleFilename, overwrite) {
         });
         return { success: true, error: null };
     } catch (e) {
-        console.error(e);
+        console.error(typeof(e));
         return { success: false, error: e };
     }
 }
 
+// returns true if the parent is an ancestor of the child
+function isAncestor(parent, child) {
+    while (child.getParent().fullPath != "/") {
+        child = child.getParent();
+        if (child.fullPath == parent.fullPath)
+            return true;
+    }
+    return false;
+}
+
 // Deletes a file
 function remove(paths) {
-    checkLogin();
+    system.checkLogin();
     try {
         for (var i in paths) {
             var path = paths[i];
@@ -174,20 +220,26 @@ function remove(paths) {
 
 // this handles the upload by returning the path at which the file should be placed
 function getUploadPath(fileName, contentType) {
-    checkLogin();
-    return system.user.homeFolder + request.form.destination + "/" + fileName;
+    system.checkLogin();
+    var filePath = system.user.homeFolder + request.form.destination + "/" + fileName;
+    var file = system.getFile(filePath);
+    var folder = file.getParent();
+    if (!folder.exists())
+        folder.createFolder();
+    console.log("Uploading " + fileName + " to " + folder.fullPath);
+    return filePath;
 }
 
 // Returns the contents of a file
 function getContent(path) {
-    checkLogin();
+    system.checkLogin();
     var file = system.getFile(system.user.homeFolder + path);
     return file.readText(content);
 }
 
 // Writes the given content to a file
 function edit(path, content) {
-    checkLogin();
+    system.checkLogin();
     try {
         var file = system.getFile(system.user.homeFolder + path);
         file.writeText(content);
@@ -205,7 +257,7 @@ function edit(path, content) {
 
 // Renames a file
 function rename(fromPath, toPath) {
-    checkLogin();
+    system.checkLogin();
     try {
         var file = system.getFile(system.user.homeFolder + fromPath);
         file.moveTo(system.user.homeFolder + toPath);
@@ -223,9 +275,8 @@ function rename(fromPath, toPath) {
 
 // Creates a new folder
 function createFolder(path) {
-    checkLogin();
+    system.checkLogin();
     try {
-        console.log(path);
         var file = system.getFile(system.user.homeFolder + path);
         file.createFolder();
         return {
@@ -242,9 +293,8 @@ function createFolder(path) {
 
 // Creates a new folder
 function createFile(path, content) {
-    checkLogin();
+    system.checkLogin();
     try {
-        console.log(path);
         var file = system.getFile(system.user.homeFolder + path);
         file.createFile();
         if (content)

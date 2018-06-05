@@ -26,6 +26,10 @@
             return this.apiHandler.getInfo(fileManagerConfig.getInfoUrl, customDeferredHandler);
         };
 
+        ApiMiddleware.prototype.exists = function(files, path, customDeferredHandler) {
+            return this.apiHandler.exists(fileManagerConfig.existsUrl, files, path, customDeferredHandler);
+        };
+
         ApiMiddleware.prototype.list = function(path, customDeferredHandler) {
             return this.apiHandler.list(fileManagerConfig.listUrl, this.getPath(path), customDeferredHandler);
         };
@@ -51,14 +55,24 @@
             return this.apiHandler.remove(fileManagerConfig.removeUrl, items);
         };
 
-        ApiMiddleware.prototype.upload = function(files, path) {
+        ApiMiddleware.prototype.upload = function(files, path, overwrite) {
             if (! $window.FormData) {
                 throw new Error('Unsupported browser version');
             }
+            var self = this;
+            var destination = self.getPath(path);
+            var doUpload = () => self.apiHandler.upload(fileManagerConfig.uploadUrl, destination, files)
 
-            var destination = this.getPath(path);
+            if (overwrite)
+                return doUpload()
+            else
+                return self.exists(files, destination).then(function(data) {
+                    var existingFiles = data.result;
+                    if (existingFiles && existingFiles.length > 0)
+                        throw { code: 'error_files_exist', data: existingFiles };
 
-            return this.apiHandler.upload(fileManagerConfig.uploadUrl, destination, files);
+                    return doUpload();
+                })
         };
 
         ApiMiddleware.prototype.getContent = function(item) {

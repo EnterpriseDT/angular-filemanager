@@ -40,17 +40,19 @@
         };
 
         $rootScope.openNavigator = function(path) {
+            if (typeof path == "string")
+                path = path.split('/').filter(Boolean);
             $scope.fileNavigator.currentPath = path;
             $scope.fileNavigator.refresh();
             $scope.modal('selector');
         };
 
         $rootScope.getSelectedPath = function() {
-            var path = $rootScope.selectedModalPath.filter(Boolean);
-            var result = '/' + path.join('/');
-            if ($scope.singleSelection() && !$scope.singleSelection().isFolder()) {
-                result += '/' + $scope.singleSelection().tempModel.name;
-            }
+            var result;
+            if ($scope.singleSelection() && !$scope.singleSelection().isFolder())
+                result = '/' + $scope.singleSelection().model.path.filter(Boolean).join('/');  // get folder
+            else
+                result = '/' + $rootScope.selectedModalPath.filter(Boolean).join('/');
             return result.replace(/\/\//, '/');
         };
 

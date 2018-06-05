@@ -18,7 +18,7 @@
                             {{fileNavigator.getCurrentFolderName() | strLimit : 12}}
                         </div>
                         <div class="btn-group">
-                            <button class="btn btn-flat btn-sm dropdown-toggle" type="button" id="dropDownMenuSearch" data-toggle="dropdown" aria-expanded="true">
+                            <button class="btn btn-flat btn-sm dropdown-toggle" type="button" id="dropDownMenuSearch" data-toggle="dropdown" aria-expanded="true" title="{{'search' | translate}}">
                                 <i class="glyphicon glyphicon-search mr2"></i>
                             </button>
                             <div class="dropdown-menu animated fast fadeIn pull-right" role="menu" aria-labelledby="dropDownMenuLang">
@@ -35,26 +35,26 @@
                         </button>
 
                         <div class="btn-group">
-                            <button class="btn btn-flat btn-sm dropdown-toggle" type="button" id="dropDownMenuNew" data-toggle="dropdown" aria-expanded="true">
+                            <button class="btn btn-flat btn-sm dropdown-toggle" type="button" id="dropDownMenuNew" data-toggle="dropdown" aria-expanded="true" title="{{'new_file_or_folder' | translate}}">
                                 <i class="glyphicon glyphicon-plus"></i>
                             </button>
 
-                            <ul class="dropdown-menu scrollable-menu animated fast fadeIn pull-right" role="menu" aria-labelledby="dropDownMenuNew">
-                                <li role="presentation">
+                            <ul class="dropdown-menu scrollable-menu animated fast fadeIn pull-right" role="menu" aria-labelledby="dropDownMenuNew" ng-show="config.allowedActions.createFolder || config.allowedActions.createFile">
+                                <li role="presentation" ng-show="config.allowedActions.createFolder">
                                     <a role="menuitem" tabindex="-1" href="" ng-click="modal('newfolder') && prepareNewFolder()">{{'new_folder' | translate}}</a>
                                 </li>
-                                <li role="presentation">
+                                <li role="presentation" ng-show="config.allowedActions.createFile">
                                     <a role="menuitem" tabindex="-1" href="" ng-click="modal('newfile') && prepareNewFile()">{{'new_file' | translate}}</a>
                                 </li>
                             </ul>
                         </div>
                         
-                        <button class="btn btn-flat btn-sm" ng-click="modal('uploadfile')" ng-show="config.allowedActions.upload" title="{{'upload_files' | translate}}">
+                        <button class="btn btn-flat btn-sm" ng-click="upload()" ng-show="config.allowedActions.upload" title="{{'upload_files' | translate}}">
                             <i class="glyphicon glyphicon-cloud-upload"></i>
                         </button>
 
                         <div class="btn-group">
-                            <button class="btn btn-flat btn-sm dropdown-toggle" type="button" id="dropDownMenuUser" data-toggle="dropdown" aria-expanded="true">
+                            <button class="btn btn-flat btn-sm dropdown-toggle" type="button" id="dropDownMenuUser" data-toggle="dropdown" aria-expanded="true" title="{{fileNavigator.userName}}">
                                 <i class="glyphicon glyphicon-user mr2"></i>
                             </button>
 
@@ -65,7 +65,7 @@
                         </div>
 
                         <div class="btn-group">
-                            <button class="btn btn-flat btn-sm dropdown-toggle" type="button" id="dropDownMenuLang" data-toggle="dropdown" aria-expanded="true">
+                            <button class="btn btn-flat btn-sm dropdown-toggle" type="button" id="dropDownMenuLang" data-toggle="dropdown" aria-expanded="true" title="{{'language' | translate}}">
                                 <i class="glyphicon glyphicon-globe mr2"></i>
                             </button>
 
@@ -88,25 +88,6 @@
                                 <li role="presentation"><a role="menuitem" tabindex="-1" href="" ng-click="changeLanguage('pl')">Polski</a></li>
                             </ul>
                         </div>
-
-                        <!-- div class="btn-group">
-                            <button class="btn btn-flat btn-sm dropdown-toggle" type="button" id="more" data-toggle="dropdown" aria-expanded="true">
-                                <i class="glyphicon glyphicon-option-vertical"></i>
-                            </button>
-
-                            <ul class="dropdown-menu scrollable-menu animated fast fadeIn pull-right" role="menu" aria-labelledby="more">
-                                <li role="presentation" ng-show="config.allowedActions.createFolder" ng-click="modal('newfolder') && prepareNewFolder()">
-                                    <a href="" role="menuitem" tabindex="-1">
-                                        <i class="glyphicon glyphicon-plus"></i> {{"new_folder" | translate}}
-                                    </a>
-                                </li>
-                                <li role="presentation" ng-show="config.allowedActions.upload" ng-click="modal('uploadfile')">
-                                    <a href="" role="menuitem" tabindex="-1">
-                                        <i class="glyphicon glyphicon-cloud-upload"></i> {{"upload_files" | translate}}
-                                    </a>
-                                </li>
-                            </ul>
-                        </div -->
                     </div>
                 </div>
             </div>
