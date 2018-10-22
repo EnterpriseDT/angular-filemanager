@@ -8,18 +8,17 @@
   -->
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
   <meta charset="utf-8">
-  <title>angular-filemanager</title>
+  <title>CompleteFTP File Manager</title>
 
-  <!-- third party -->
-    <script src="bower_components/jquery/dist/jquery.min.js"></script>
-    <script src="bower_components/angular/angular.min.js"></script>
-    <script src="bower_components/angular-translate/angular-translate.min.js"></script>
-    <script src="bower_components/ng-file-upload/ng-file-upload.min.js"></script>
-    <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="bower_components/bootswatch/paper/bootstrap.min.css" />
-  <!-- /third party -->
-
+  
 {{#developmentMode}}
+	<script src="bower_components/jquery/dist/jquery.min.js"></script>
+	<script src="bower_components/angular/angular.min.js"></script>
+	<script src="bower_components/angular-translate/angular-translate.min.js"></script>
+	<script src="bower_components/ng-file-upload/ng-file-upload.min.js"></script>
+	<script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="bower_components/bootswatch/paper/bootstrap.min.css" />
+	
     <script src="src/js/app.js"></script>
     <script src="src/js/directives/directives.js"></script>
     <script src="src/js/filters/filters.js"></script>
@@ -37,8 +36,14 @@
 {{/developmentMode}}
 
 {{^developmentMode}}
-    <link href="dist/angular-filemanager.min.css" rel="stylesheet">
-    <script src="dist/angular-filemanager.min.js"></script>
+	<script src="js/jquery.min.js"></script>
+	<script src="js/angular.min.js"></script>
+	<script src="js/angular-translate.min.js"></script>
+	<script src="js/ng-file-upload.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<link href="css/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/angular-filemanager.min.css" rel="stylesheet">
+    <script src="js/angular-filemanager.min.js"></script>
 {{/developmentMode}}
     
   <script type="text/javascript">
