@@ -12,7 +12,7 @@ var path = require('path');
 
 // Vars
 var src = 'src/';
-var dst = 'dist/';
+var dst = 'build/';
 var tplPath = 'src/templates'; //must be same as fileManagerConfig.tplPath
 var jsFile = 'angular-filemanager.min.js';
 var cssFile = 'angular-filemanager.min.css';
@@ -71,5 +71,5 @@ gulp.task('lint', function () {
     .pipe(eslint.failOnError());
 });
 
-gulp.task('default', ['concat-uglify-js', 'minify-css']);
+gulp.task('default', ['concat-uglify-js', 'minify-css', 'cache-templates']);
 gulp.task('build', ['clean', 'lint', 'default']);
