@@ -1,10 +1,6 @@
 // Set to true to redirect HTTP connections to HTTPS (only if HTTPS is enabled)
 var forceHttps = true;
 
-// Set to true if you want to use the full source-code (slow)
-// Set to false if you want to use the minimized source-code (fast)
-var developmentMode = true;
-
 // Handles (1) the initial index page request, (2) file downloads, (3) file uploads
 function processRequest() {
     // make sure we're HTTPS
@@ -23,7 +19,7 @@ function processRequest() {
         response.forceDownload = true;
     } else {  // show file-manager
         response.writeUsingTemplateFile("template.html", {
-            developmentMode: developmentMode
+            developmentMode: debugMode
         });
     }
 }
@@ -107,24 +103,16 @@ function share(paths) {
     system.checkLogin();
     var urls = [];
     paths.forEach(function(path) {
-        console.log("1");
         // call ListShares to ensure the Shares folder has been created
         system.executeCustomCommand("ShareAPI.ListShares", [""]);
-        console.log("2");
 
         var file = system.getFile(system.user.homeFolder + path);
-        console.log("3");
         var sharePath = system.user.homeFolder + "/Shares/" + file.name;
-        console.log("4");
         file.copyTo(sharePath);
-        console.log("5");
 
         var jsonResponse = system.executeCustomCommand("ShareAPI.ShareFile", [file.name, file.length]);
-        console.log("6");
         var response = JSON.parse(jsonResponse)
-        console.log("7");
         urls.push({ name: file.name, url: response.result });
-        console.log("8");
     });
     return urls;
 }
@@ -226,7 +214,6 @@ function getUploadPath(fileName, contentType) {
     var folder = file.getParent();
     if (!folder.exists())
         folder.createFolder();
-    console.log("Uploading " + fileName + " to " + folder.fullPath);
     return filePath;
 }
 
