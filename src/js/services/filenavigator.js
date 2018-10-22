@@ -1,7 +1,7 @@
 (function(angular) {
     'use strict';
     angular.module('FileManagerApp').service('fileNavigator', [
-        'apiMiddleware', 'fileManagerConfig', 'item', function (ApiMiddleware, fileManagerConfig, Item) {
+        'apiMiddleware', 'fileManagerConfig', 'item', '$window', function (ApiMiddleware, fileManagerConfig, Item, $window) {
 
         var FileNavigator = function(authenticationErrorHandler) {
             this.authenticationErrorHandler = authenticationErrorHandler;
@@ -27,27 +27,27 @@
             return path.trim() ? path.split('/') : [];
         };
 
-        FileNavigator.prototype.deferredHandler = function(data, deferred, code, defaultMsg) {
-            if (!data || typeof data !== 'object') {
+        FileNavigator.prototype.deferredHandler = function(response, deferred, code, defaultMsg, headers) {
+            var data = response.data;
+            if (!!headers && !!headers['x-completeftp-login']) {
+                this.authenticationErrorHandler();
+                return;
+            }
+            if (!data || typeof data !== 'object')
                 this.error = 'Error %s - Server connection lost.'.replace('%s', code);
-            }
-            if (this && !this.error && code === 404) {
+            if (this && !this.error && code === 404)
                 this.error = 'Error 404 - Server file-manager not found.';
-            }
-            if (code === 200 && !data.error) {
+            if (this && !this.error && code === 200 && !data.error)
                 this.error = null;
-            }
-            if (this && !this.error && data.result && data.result.error) {
+            if (this && !this.error && data.result && data.result.error)
                 this.error = data.result.error;
-            }
             if (this && !this.error && data.error) {
                 this.error = data.error.message;
                 if (data.error.code === 1)
                     this.authenticationErrorHandler();
             }
-            if (this && !this.error && defaultMsg) {
+            if (this && !this.error && defaultMsg)
                 this.error = defaultMsg;
-            }
             if (this && this.error)
                 return deferred.reject(data);
             else
@@ -79,8 +79,12 @@
                         this.userName = info.userName;
                         this.sharingEnabled = info.sharingEnabled;
                         return self.list();
-                    }.bind(this), function(error) {
-                        this.authenticationErrorHandler();
+                    }.bind(this), 
+                    function(data) {
+                        if (typeof(data)=='string') // happens when RPC was redirected to /Login
+                            $window.location.href = '/Login';
+                        else
+                            this.authenticationErrorHandler();
                     }.bind(this))
                 .then(
                     function(data) {

@@ -41,10 +41,10 @@
 
                             <ul class="dropdown-menu scrollable-menu animated fast fadeIn pull-right" role="menu" aria-labelledby="dropDownMenuNew" ng-show="config.allowedActions.createFolder || config.allowedActions.createFile">
                                 <li role="presentation" ng-show="config.allowedActions.createFolder">
-                                    <a role="menuitem" tabindex="-1" href="" ng-click="modal('newfolder') && prepareNewFolder()">{{'new_folder' | translate}}</a>
+                                    <a role="menuitem" tabindex="-1" href="" ng-click="newFolder() && prepareNewFolder()">{{'new_folder' | translate}}</a>
                                 </li>
                                 <li role="presentation" ng-show="config.allowedActions.createFile">
-                                    <a role="menuitem" tabindex="-1" href="" ng-click="modal('newfile') && prepareNewFile()">{{'new_file' | translate}}</a>
+                                    <a role="menuitem" tabindex="-1" href="" ng-click="newFile() && prepareNewFile()">{{'new_file' | translate}}</a>
                                 </li>
                             </ul>
                         </div>

@@ -238,7 +238,7 @@
 <div class="modal animated fadeIn" id="newfolder">
   <div class="modal-dialog">
     <div class="modal-content">
-        <form ng-submit="createFolder()">
+        <form ng-submit="createFolder()" onopen="prepareNewFolder" onclose="cancelNewItem">
             <div class="modal-header">
               <button type="button" class="close" data-dismiss="modal">
                   <span aria-hidden="true">&times;</span>
@@ -248,7 +248,7 @@
             </div>
             <div class="modal-body">
               <label class="radio">{{'folder_name' | translate}}</label>
-              <input class="form-control" ng-model="singleSelection().tempModel.name" autofocus="autofocus">
+              <input class="form-control" ng-model="temps[0].tempModel.name" autofocus="autofocus">
               <div ng-include data-src="'error-bar'" class="clearfix"></div>
             </div>
             <div class="modal-footer">
@@ -263,7 +263,7 @@
 <div class="modal animated fadeIn" id="newfile">
   <div class="modal-dialog">
     <div class="modal-content">
-        <form ng-submit="createFile()">
+        <form ng-submit="createFile()" onopen="prepareNewFile" onclose="cancelNewItem">
             <div class="modal-header">
               <button type="button" class="close" data-dismiss="modal">
                   <span aria-hidden="true">&times;</span>
@@ -273,9 +273,9 @@
             </div>
             <div class="modal-body">
               <label class="radio">{{'file_name' | translate}}</label>
-              <input class="form-control" ng-model="singleSelection().tempModel.name" autofocus="autofocus">
+              <input class="form-control" ng-model="temps[0].tempModel.name" autofocus="autofocus">
               <label class="radio">{{'file_content' | translate}}</label>
-              <textarea class="form-control code" ng-model="singleSelection().tempModel.content" ng-show="!apiMiddleware.apiHandler.inprocess"></textarea>
+              <textarea class="form-control code" ng-model="temps[0].tempModel.content" ng-show="!apiMiddleware.apiHandler.inprocess"></textarea>
               <div ng-include data-src="'error-bar'" class="clearfix"></div>
             </div>
             <div class="modal-footer">
@@ -330,7 +330,7 @@
               <div ng-show="apiMiddleware.apiHandler.inprocess" style="margin-bottom: 10px">
                 <em>{{"uploading" | translate}}... {{apiMiddleware.apiHandler.progress}}%</em>
                 <div class="progress mb0">
-                  <div class="progress-bar active" role="progressbar" aria-valuenow="{{apiMiddleware.apiHandler.progress}}" aria-valuemin="0" aria-valuemax="100" style="width: {{apiMiddleware.apiHandler.progress}}%"></div>
+                  <div class="progress-bar active" role="progressbar" aria-valuenow="{{apiMiddleware.apiHandler.progress}}" aria-valuemin="0" aria-valuemax="100" ng-attr-style="width: {{apiMiddleware.apiHandler.progress}}%"></div>
                 </div>
               </div>
             <div>
@@ -485,7 +485,7 @@
 <div class="modal animated fadeIn" id="share">
   <div class="modal-dialog">
     <div class="modal-content">
-    <form ng-submit="share()">
+    <form ng-submit="sendToNativeShare()">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">
             <span aria-hidden="true">&times;</span>
@@ -529,6 +529,25 @@
       </div>
       <div class="modal-footer">
         <button type="submit" class="btn btn-primary" data-dismiss="modal" autofocus="autofocus">{{"ok" | translate}}</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal animated fadeIn" id="confirm">
+  <div class="modal-dialog">
+    <div class="modal-content">
+    <form>
+      <div class="modal-header">
+        <h4 class="modal-title">{{message.title}}</h4>
+      </div>
+      <div class="modal-body">
+        {{message.text}}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" ng-click="onConfirm(true)" autofocus="autofocus">{{"ok" | translate}}</button>
+        <button type="button" class="btn btn-primary" ng-click="onConfirm(false)" autofocus="autofocus">{{"cancel" | translate}}</button>
       </div>
       </form>
     </div>
