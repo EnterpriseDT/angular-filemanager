@@ -18,16 +18,22 @@
     angular.element(window.document).on('contextmenu', '.main-navigation .table-files tr.item-list:has("td"), .item-list, .main', function(e) {
         var menu = angular.element('#context-menu');
 
-        if (e.pageX >= window.innerWidth - menu.width()) {
-            e.pageX -= menu.width();
-        }
-        if (e.pageY >= window.innerHeight - menu.height()) {
-            e.pageY -= menu.height();
-        }
+        var x = e.pageX;
+        if (x >= window.innerWidth - menu.width())
+            x -= menu.width();
+        if (x < 10)
+            x = 10;
+            
+        var y = e.pageY;
+        if (y - $(window).scrollTop() >= window.innerHeight - menu.height())
+            y -= menu.height();
+        if (y < 10)
+            y = 10;
+         
 
         menu.hide().css({
-            left: e.pageX,
-            top: e.pageY
+            left: x,
+            top: y
         }).appendTo('body').show();
         e.preventDefault();
     });
