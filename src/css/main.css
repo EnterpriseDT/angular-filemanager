@@ -332,16 +332,17 @@ angular-filemanager > div,.row,.main,.sidebar {
   height: 100%;
 }
 
+.container-fluid {
+  height: -webkit-calc(100% - 58px);
+  height: -moz-calc(100% - 58px);
+  height: calc(100% - 58px);
+}
+
+
 @media (min-width: 768px) {
   .main {
     padding-right: 0;
     padding-left: 0;
-  }
-
-  .container-fluid {
-    height: -webkit-calc(100% - 58px);
-    height: -moz-calc(100% - 58px);
-    height: calc(100% - 58px);
   }
 
   .sidebar {
