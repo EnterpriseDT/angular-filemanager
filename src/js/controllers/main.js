@@ -1,8 +1,8 @@
 (function(angular) {
     'use strict';
     angular.module('FileManagerApp').controller('FileManagerCtrl', [
-        '$scope', '$rootScope', '$window', '$translate', '$timeout', '$document', 'fileManagerConfig', 'item', 'fileNavigator', 'apiMiddleware',
-        function($scope, $rootScope, $window, $translate, $timeout, $document, fileManagerConfig, Item, FileNavigator, ApiMiddleware) {
+        '$scope', '$rootScope', '$window', '$translate', '$timeout', '$document', '$q', 'fileManagerConfig', 'item', 'fileNavigator', 'apiMiddleware',
+        function($scope, $rootScope, $window, $translate, $timeout, $document, $q, fileManagerConfig, Item, FileNavigator, ApiMiddleware) {
 
         var $storage = $window.localStorage;
         $scope.config = fileManagerConfig;
@@ -121,22 +121,20 @@
 
         $scope.prepareNewFolder = function() {
             var item = new Item(null, $scope.fileNavigator.currentPath);
-            item.model.name = $scope.getNewName("New folder*");
+            item.model.name = $scope.getNewName('New folder*');
             $scope.temps = [item];
-            return item;
         };
 
         $scope.prepareNewFile = function() {
             var item = new Item(null, $scope.fileNavigator.currentPath);
-            item.model.name = $scope.getNewName("New file*.txt");
+            item.model.name = $scope.getNewName('New file*.txt');
             $scope.temps = [item];
-            return item;
         };
         
         $scope.getNewName = function(template) {
             for (var i=1;; i++) {
-                var name = template.replace("*", i > 1 ? " " + i : "");
-                if (!$scope.fileNavigator.fileList.find((item) => item.model.name == name))
+                var name = template.replace('*', i > 1 ? ' ' + i : '');
+                if (!$scope.fileNavigator.fileList.find(function(item) { return item.model.name == name; }))
                     return name;
             }
         };
@@ -180,6 +178,11 @@
         };
 
         $scope.openEditItem = function() {
+            if (!$scope.fileNavigator.canUpload) {
+                $scope.alert({message:'no_permission_title', args:{operation:$translate.instant('edit')}},
+                    {message:'no_permission_text', args:{operation:$translate.instant('edit').toLowerCase()}});
+                return;
+            }
             var item = $scope.singleSelection();
             $scope.apiMiddleware.getContent(item).then(function(data) {
                 item.tempModel.content = item.model.content = data.result;
@@ -190,16 +193,25 @@
         $scope.modal = function(id, hide, returnElement) {
             var element = angular.element('#' + id);
             var form = element.find('form');
-            if (!hide && form && form.attr('onclose')) {
+            if (!hide && form) {
                 var scope = $scope;
-                element.on('hidden.bs.modal', function() {
-                    element.off('hidden.bs.modal');
-                    var value = form.attr('onclose');
+                if (form.attr('onopen')) {
+                    var value = form.attr('onopen');
                     if (scope[value] instanceof Function)
                         scope[value].apply(this);
                     else
                         eval(value);
-                });
+                }
+                if (form.attr('onclose')) {
+                    element.on('hidden.bs.modal', function() {
+                        element.off('hidden.bs.modal');
+                        var value = form.attr('onclose');
+                        if (scope[value] instanceof Function)
+                            scope[value].apply(this);
+                        else
+                            eval(value);
+                    });
+                }
             }
             element.modal(hide ? 'hide' : 'show');
             $scope.apiMiddleware.apiHandler.error = '';
@@ -247,21 +259,42 @@
             $window.open(baseUrl + $scope.fileNavigator.homeFolder + item.model.fullPath(), '_blank');
         };
 
-        $scope.getShareURL = function() {
+        $scope.share = function() {
             if (!$scope.fileNavigator.sharingEnabled) {
-                $scope.alert("no_sharing_title", null, "no_sharing_text");
+                $scope.alert('no_sharing_title', 'no_sharing_text');
                 return;
             }
-            $scope.apiMiddleware.share($scope.temps)
-                .then(function(data) {
-                    var shares = $scope.fileNavigator.shares = data.result;
-                    var baseUrl = window.location.protocol + '//' + window.location.host;
-                    shares.forEach(function(share) { share.url = baseUrl + share.url + '/' + share.name; });
-                    $scope.modal('share');
-                });
+            var scope = $scope;
+            var files = $scope.apiMiddleware.getFileList($scope.temps);
+            var fileNames = files.map(function(p) { return p.match(/[^\/]*$/)[0]; });
+            
+            $scope.apiMiddleware.exists(fileNames, '/Shares')
+            .then(function(existResponse) {
+                var existingFiles = existResponse.result;
+                if (existingFiles && existingFiles.length > 0) {
+                    var deferred = $q.defer();
+                    var fileString = existingFiles.slice(0, 10).map(function(s) { return s.match(/([^\/]+)$/)[1]; }).join(', ');
+                    scope.confirm(
+                        {message:'shares_exist_title'}, {message:'shares_exist_prompt', args: { files: fileString }}, 
+                        function(overwrite) { return overwrite ? deferred.resolve() : deferred.reject(); });
+                    return deferred.promise;
+                }
+            })
+            .then(function() {
+                return scope.apiMiddleware.share(files);
+            })
+            .then(function(shareResponse) {
+                scope.fileNavigator.shares = shareResponse.result;
+                var baseUrl = window.location.protocol + '//' + window.location.host;
+                scope.fileNavigator.shares.forEach(function(share) { return share.url = baseUrl + share.url + '/' + share.name; });
+                scope.modal('share');
+            })
+            .catch(function(error) { 
+                console.log(error);
+            });
         };
 
-        $scope.share = function() {
+        $scope.sendToNativeShare = function() {
             if (!$scope.fileNavigator.shares || $scope.fileNavigator.shares.length === 0)
                 return;
             var share = $scope.fileNavigator.shares[0];
@@ -278,7 +311,7 @@
         $scope.copyShareLink = function(textAreaID) {
             var copyText = $document[0].getElementById(textAreaID);
             copyText.select();
-            $document[0].execCommand("copy");
+            $document[0].execCommand('copy');
         };
 
         $scope.copy = function() {
@@ -360,8 +393,8 @@
 
         $scope.showRemove = function() {
             if (!$scope.fileNavigator.canRemove) {
-                $scope.alert("no_permission_title", {operation:$translate.instant("remove")},
-                    "no_permission_text", {operation:$translate.instant("remove").toLowerCase()});
+                $scope.alert({message:'no_permission_title', args:{operation:$translate.instant('remove')}},
+                    {message:'no_permission_text', args:{operation:$translate.instant('remove').toLowerCase()}});
                 return;
             }
             $scope.modal('remove');
@@ -384,27 +417,33 @@
         $scope.login = function() {
             if (!$scope.username || !$scope.password)
                 return;
+            $scope.fileNavigator.currentPath = [];
             $scope.apiMiddleware.login($scope.username, $scope.password).then(function() {
                 $scope.password = '';
                 $scope.fileNavigator.refresh().then(function() {
                     $scope.modal('login', true);
                 });
             }, function(err) {
+                if (typeof(err)=='string') // happens when RPC was redirected to /Login
+                    $window.location.href = '/Login';
             });
         };
         
         $scope.logout = function() {
-            $scope.apiMiddleware.logout($scope.temps).then(function() {
-                $scope.username = '';
-                $scope.modal('logout', true);
-                $scope.fileNavigator.refresh();
+            $scope.apiMiddleware.logout($scope.temps).then(function(data) {
+                if (data.result.publicAccessEnabled) {
+                    $scope.username = '';
+                    $scope.modal('logout', true);
+                    $scope.fileNavigator.refresh();
+                } else
+                    $window.location.href = '/Login';
             });
         };
 
         $scope.showMove = function() {
             if (!$scope.fileNavigator.canRename) {
-                $scope.alert("no_permission_title", {operation:$translate.instant("move")},
-                    "no_permission_text", {operation:$translate.instant("move").toLowerCase()});
+                $scope.alert({message:'no_permission_title', args:{operation:$translate.instant('move')}},
+                    {message:'no_permission_text', args:{operation:$translate.instant('move').toLowerCase()}});
                 return;
             }
             $scope.modalWithPathSelector('move');
@@ -429,8 +468,8 @@
 
         $scope.showRename = function() {
             if (!$scope.fileNavigator.canRename) {
-                $scope.alert("no_permission_title", {operation:$translate.instant("rename")},
-                    "no_permission_text", {operation:$translate.instant("rename").toLowerCase()});
+                $scope.alert({message:'no_permission_title', args:{operation:$translate.instant('rename')}},
+                    {message:'no_permission_text', args:{operation:$translate.instant('rename').toLowerCase()}});
                 return;
             }
             $scope.modal('rename');
@@ -453,6 +492,16 @@
         $scope.cancelRename = function() {
             var item = $scope.singleSelection();
             item.tempModel.name = item.model.name;
+            $scope.fileNavigator.overwrite = false;
+        };
+
+        $scope.newFolder = function() {
+            if (!$scope.fileNavigator.canUpload) {
+                $scope.alert({message:'no_permission_title', args:{operation:$translate.instant('new_folder')}},
+                    {message:'no_permission_text', args:{operation:$translate.instant('createFilesOrFolders').toLowerCase()}});
+                return;
+            }
+            $scope.modal('newfolder');
         };
 
         $scope.createFolder = function() {
@@ -465,6 +514,19 @@
                 $scope.fileNavigator.refresh();
                 $scope.modal('newfolder', true);
             });
+        };
+
+        $scope.cancelNewItem = function() {
+            $scope.temps = [];
+        };
+
+        $scope.newFile = function() {
+            if (!$scope.fileNavigator.canUpload) {
+                $scope.alert({message:'no_permission_title', args:{operation:$translate.instant('new_file')}},
+                    {message:'no_permission_text', args:{operation:$translate.instant('createFilesOrFolders').toLowerCase()}});
+                return;
+            }
+            $scope.modal('newfile');
         };
 
         $scope.createFile = function() {
@@ -483,12 +545,26 @@
             $scope.uploadFileList.splice(index, 1);
         };
 
-        $scope.alert = function(title, titleArgs, text, textArgs) {
+        $scope.alert = function(title, text) {
             $scope.message = {
-                title: $translate.instant(title, titleArgs),
-                text: $translate.instant(text, textArgs)
+                title: !title.message ? title : $translate.instant(title.message, title.args),
+                text: !text.message ? text : $translate.instant(text.message, text.args)
             };
             $scope.modal('alert');
+        };
+
+        $scope.confirm = function(title, text, callback) {
+            $scope.confirmCallback = callback;
+            $scope.message = {
+                title: !title.message ? title : $translate.instant(title.message, title.args),
+                text: !text.message ? text : $translate.instant(text.message, text.args)
+            };
+            $scope.modal('confirm');
+        };
+
+        $scope.onConfirm = function(isConfirmed) {
+            $scope.modal('confirm', true);
+            $scope.confirmCallback(isConfirmed);
         };
 
         $scope.upload = function($files) {
@@ -502,8 +578,8 @@
                     return;
             }
             if (!$scope.fileNavigator.canUpload) {
-                $scope.alert("no_permission_title", {operation:$translate.instant("upload")},
-                    "no_permission_text", {operation:$translate.instant("upload").toLowerCase()});
+                $scope.alert({message:'no_permission_title', args:{operation:$translate.instant('upload')}},
+                    {message:'no_permission_text', args:{operation:$translate.instant('upload').toLowerCase()}});
                 return;
             }
             $scope.uploadFileList = $scope.uploadFileList.concat(files);
@@ -531,8 +607,10 @@
         };
 
         $scope.cancelUpload = function() {
-            if (!$scope.uploading)
-                $scope.uploadFileList = [];            
+            if (!$scope.uploading) {
+                $scope.uploadFileList = [];
+                $scope.fileNavigator.overwrite = false;
+            }
         };
 
         $scope.getUrl = function(_item) {

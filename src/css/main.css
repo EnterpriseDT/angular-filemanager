@@ -332,16 +332,33 @@ angular-filemanager > div,.row,.main,.sidebar {
   height: 100%;
 }
 
+@media (max-width: 362px) {
+  .container-fluid {
+    height: -webkit-calc(100% - 139px);
+    height: -moz-calc(100% - 139px);
+    height: calc(100% - 139px);
+  }
+}
+
+@media (min-width: 363px) and (max-width: 767px) {
+  .container-fluid {
+    height: -webkit-calc(100% - 109px);
+    height: -moz-calc(100% - 109px);
+    height: calc(100% - 109px);
+  }
+}
+
 @media (min-width: 768px) {
+
+  .container-fluid {
+    height: -webkit-calc(100% - 54px);
+    height: -moz-calc(100% - 54px);
+    height: calc(100% - 54px);
+  }
+
   .main {
     padding-right: 0;
     padding-left: 0;
-  }
-
-  .container-fluid {
-    height: -webkit-calc(100% - 58px);
-    height: -moz-calc(100% - 58px);
-    height: calc(100% - 58px);
   }
 
   .sidebar {

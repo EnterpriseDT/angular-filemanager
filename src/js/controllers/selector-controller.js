@@ -40,7 +40,7 @@
         };
 
         $rootScope.openNavigator = function(path) {
-            if (typeof path == "string")
+            if (typeof path == 'string')
                 path = path.split('/').filter(Boolean);
             $scope.fileNavigator.currentPath = path;
             $scope.fileNavigator.refresh();
@@ -49,9 +49,9 @@
 
         $rootScope.getSelectedPath = function() {
             var result;
-            if ($scope.singleSelection() && !$scope.singleSelection().isFolder())
-                result = '/' + $scope.singleSelection().model.path.filter(Boolean).join('/');  // get folder
-            else
+            //if ($scope.singleSelection() && !$scope.singleSelection().isFolder())
+            //    result = '/' + $scope.singleSelection().model.path.filter(Boolean).join('/');  // get folder
+            //else
                 result = '/' + $rootScope.selectedModalPath.filter(Boolean).join('/');
             return result.replace(/\/\//, '/');
         };

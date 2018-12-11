@@ -35,8 +35,7 @@
         };
 
         ApiMiddleware.prototype.share = function(files, customDeferredHandler) {
-            var items = this.getFileList(files);
-            return this.apiHandler.share(fileManagerConfig.shareUrl, items, customDeferredHandler);
+            return this.apiHandler.share(fileManagerConfig.shareUrl, files, customDeferredHandler);
         };
 
         ApiMiddleware.prototype.copy = function(files, path, overwrite) {
@@ -61,10 +60,12 @@
             }
             var self = this;
             var destination = self.getPath(path);
-            var doUpload = () => self.apiHandler.upload(fileManagerConfig.uploadUrl, destination, files)
+            var doUpload = function() {
+                return self.apiHandler.upload(fileManagerConfig.uploadUrl, destination, files);
+            };
 
             if (overwrite)
-                return doUpload()
+                return doUpload();
             else
                 return self.exists(files, destination).then(function(data) {
                     var existingFiles = data.result;
@@ -72,7 +73,7 @@
                         throw { code: 'error_files_exist', data: existingFiles };
 
                     return doUpload();
-                })
+                });
         };
 
         ApiMiddleware.prototype.getContent = function(item) {

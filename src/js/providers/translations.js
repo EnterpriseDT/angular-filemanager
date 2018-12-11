@@ -94,17 +94,20 @@
             error_uploading_files: 'An error occurred uploading files',
             error_files_exist: 'File(s) or folder(s) already exist',
             error_filetype_not_allowed: 'File-type not permitted',
+            error_not_supported: 'Operation not supported',
             error_permission_denied: 'Permissions denied for this file/folder',
             error_file_not_found: 'File or folder not found',
             error_not_folder: 'Not a folder',
             error_timeout: 'Server access problem.  The operation timed out',
             select_destination: 'Please select a destination folder',
             sure_to_start_compression_with: 'Are you sure to compress',
-            no_permission_title: "{{operation}} not allowed",
-            no_permission_text: "You don't have permission to {{operation}} files in this folder.",
-            no_sharing_title: "Sharing not supported",
-            no_sharing_text: "Sharing is not supported on this device",
-            share_link: "Anyone with the following link can access the file:",
+            no_permission_title: '{{operation}} not allowed',
+            no_permission_text: 'You don\'t have permission to {{operation}} files in this folder.',
+            no_sharing_title: 'Sharing not supported',
+            no_sharing_text: 'Sharing is not supported on this device',
+            share_link: 'Anyone with the following link can access the file:',
+            shares_exist_title: 'Share(s) already exist',
+            shares_exist_prompt: 'The shares, {{files}}, already exist.  Do you want to overwrite them?',
             owner: 'Owner',
             group: 'Group',
             others: 'Others',
@@ -128,7 +131,8 @@
             logout: 'Log out',
             share: 'Share',
             sure_to_logout: 'Are you sure you want to log out?',
-            overwrite: 'Overwrite destination?'
+            overwrite: 'Overwrite destination?',
+            createFilesOrFolders: 'add sub-folders or'
         });
 
         $translateProvider.translations('nl', {
