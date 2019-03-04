@@ -259,39 +259,85 @@
             $window.open(baseUrl + $scope.fileNavigator.homeFolder + item.model.fullPath(), '_blank');
         };
 
-        $scope.share = function() {
+        $scope.share = function(usePassword) {
             if (!$scope.fileNavigator.sharingEnabled) {
                 $scope.alert('no_sharing_title', 'no_sharing_text');
                 return;
             }
             var scope = $scope;
-            var files = $scope.apiMiddleware.getFileList($scope.temps);
+            var files = scope.apiMiddleware.getFileList(scope.temps);
             var fileNames = files.map(function(p) { return p.match(/[^\/]*$/)[0]; });
             
             $scope.apiMiddleware.exists(fileNames, '/Shares')
-            .then(function(existResponse) {
-                var existingFiles = existResponse.result;
-                if (existingFiles && existingFiles.length > 0) {
-                    var deferred = $q.defer();
-                    var fileString = existingFiles.slice(0, 10).map(function(s) { return s.match(/([^\/]+)$/)[1]; }).join(', ');
-                    scope.confirm(
-                        {message:'shares_exist_title'}, {message:'shares_exist_prompt', args: { files: fileString }}, 
-                        function(overwrite) { return overwrite ? deferred.resolve() : deferred.reject(); });
-                    return deferred.promise;
-                }
-            })
-            .then(function() {
-                return scope.apiMiddleware.share(files);
-            })
-            .then(function(shareResponse) {
-                scope.fileNavigator.shares = shareResponse.result;
-                var baseUrl = window.location.protocol + '//' + window.location.host;
-                scope.fileNavigator.shares.forEach(function(share) { return share.url = baseUrl + share.url + '/' + share.name; });
-                scope.modal('share');
-            })
-            .catch(function(error) { 
-                console.log(error);
-            });
+                .then(function(existResponse) {
+                    var existingFiles = existResponse.result;
+                    if (existingFiles && existingFiles.length > 0) {
+                        var deferred = $q.defer();
+                        var fileString = existingFiles.slice(0, 10).map(function(s) { return s.match(/([^\/]+)$/)[1]; }).join(', ');
+                        scope.confirm(
+                            {message:'shares_exist_title'}, {message:'shares_exist_prompt', args: { files: fileString }}, 
+                            function(overwrite) { return overwrite ? deferred.resolve() : deferred.reject(); });
+                        return deferred.promise;
+                    }
+                })
+                .then(function() {
+                    if (usePassword) {
+                        scope.password = scope.passwordConfirm = '';
+                        scope.modal('sharewithpassword');
+                        return;
+                    } else
+                        return scope.shareFiles();
+                })
+                .catch(function(error) {
+                    console.log(error);
+                    if (error.error && error.error.message)
+                        alert(error.error.message);
+                });
+        };
+
+        $scope.shareWithPassword = function() {
+            var error;
+            if (!$scope.password)
+                error = 'error_password_empty';
+            else if (!$scope.isValidSharePassword($scope.password))
+                error = 'error_password_invalid';
+            else if (!$scope.passwordConfirm)
+                error = 'error_password_confirm_empty';
+            else if ($scope.password != $scope.passwordConfirm)
+                error = 'error_password_no_match';
+            if (error) {
+                $scope.apiMiddleware.apiHandler.error = $translate.instant(error);
+                return;
+            }
+
+            $scope.modal('sharewithpassword', true);
+            return $scope.shareFiles($scope.password)
+                .catch(function(error) { 
+                    console.log(error);
+                });
+        };
+
+        $scope.isValidSharePassword = function(password) {
+            if (password.length < 4)
+                return false;
+            else if (password[0] == ' ')
+                return false;
+            else if (password[password.length-1] == ' ')
+                return false;
+            else
+                return true;
+        };
+
+        $scope.shareFiles = function(password) {
+            var scope = $scope;
+            var files = scope.apiMiddleware.getFileList(scope.temps);
+            return scope.apiMiddleware.share(files, password)
+                .then(function(shareResponse) {
+                    scope.fileNavigator.shares = shareResponse.result;
+                    var baseUrl = window.location.protocol + '//' + window.location.host;
+                    scope.fileNavigator.shares.forEach(function(share) { return share.url = baseUrl + share.url + '/' + share.name; });
+                    scope.modal('share');
+                });
         };
 
         $scope.sendToNativeShare = function() {
@@ -430,10 +476,13 @@
         };
         
         $scope.logout = function() {
-            $scope.apiMiddleware.logout($scope.temps).then(function() {
-                $scope.username = '';
-                $scope.modal('logout', true);
-                $scope.fileNavigator.refresh();
+            $scope.apiMiddleware.logout($scope.temps).then(function(data) {
+                if (data.result.publicAccessEnabled) {
+                    $scope.username = '';
+                    $scope.modal('logout', true);
+                    $scope.fileNavigator.refresh();
+                } else
+                    $window.location.href = '/Login';
             });
         };
 
