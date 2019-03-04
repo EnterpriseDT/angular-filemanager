@@ -482,6 +482,33 @@
   </div>
 </div>
 
+<div class="modal animated fadeIn" id="sharewithpassword" data-backdrop="static" data-keyboard="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+    <form ng-submit="shareWithPassword()">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">
+            <span aria-hidden="true">&times;</span>
+            <span class="sr-only">{{"close" | translate}}</span>
+        </button>
+        <h4 class="modal-title">{{"share_password" | translate}}</h4>
+      </div>
+      <div class="modal-body">
+        <label class="radio">{{'password' | translate}}</label>
+        <input type="password" class="form-control" ng-model="$parent.password" autofocus="autofocus">
+        <label class="radio">{{'password_confirm' | translate}}</label>
+        <input type="password" class="form-control" ng-model="$parent.passwordConfirm" autofocus="autofocus">
+        <div ng-include data-src="'error-bar'" class="clearfix"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary" ng-disabled="apiMiddleware.apiHandler.inprocess" autofocus="autofocus">{{"share" | translate}}</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal" ng-disabled="apiMiddleware.apiHandler.inprocess">{{"cancel" | translate}}</button>
+      </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <div class="modal animated fadeIn" id="share">
   <div class="modal-dialog">
     <div class="modal-content">
