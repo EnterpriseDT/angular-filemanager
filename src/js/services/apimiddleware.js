@@ -34,8 +34,8 @@
             return this.apiHandler.list(fileManagerConfig.listUrl, this.getPath(path), customDeferredHandler);
         };
 
-        ApiMiddleware.prototype.share = function(files, customDeferredHandler) {
-            return this.apiHandler.share(fileManagerConfig.shareUrl, files, customDeferredHandler);
+        ApiMiddleware.prototype.share = function(files, password, customDeferredHandler) {
+            return this.apiHandler.share(fileManagerConfig.shareUrl, files, password, customDeferredHandler);
         };
 
         ApiMiddleware.prototype.copy = function(files, path, overwrite) {
