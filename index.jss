@@ -4,7 +4,7 @@ var forceHttps = true;
 // Handles (1) the initial index page request, (2) file downloads, (3) file uploads
 function processRequest() {
     // make sure we're HTTPS
-    if (forceHttps && request.uri.indexOf("http:") === 0) {
+    if (forceHttps && request.uriParts.protocol == "http") {
         if (system.site.httpsEnabled) {
             response.redirectUrl = request.uri.replace("http:", "https:");
             return;
@@ -36,6 +36,9 @@ function login(username, password) {
 function logout() {
     try {
         system.logout();
+        return {
+            publicAccessEnabled: system.site.publicAccessEnabled
+        };
     } catch (err) {
         console.error("Logout failed: " + err);
         throw err;
@@ -82,6 +85,8 @@ function list(path, fileExtensions) {
     var files = folder.getFiles();
     for (var i in files) {
         var file = files[i];
+		if (file.name == "Shares") // TODO: Once Shares folders have their own type this should be used instead of the name
+			continue;
         items.push({
             name: file.name,
             rights: "drwxr-xr-x",
@@ -99,20 +104,23 @@ function list(path, fileExtensions) {
 }
 
 // Copies files
-function share(paths) {
+function share(paths, password) {
     system.checkLogin();
+
+    // call list to ensure the Shares folder has been created
+    system.shares.list();
+    
     var urls = [];
     paths.forEach(function(path) {
-        // call ListShares to ensure the Shares folder has been created
-        system.executeCustomCommand("ShareAPI.ListShares", [""]);
-
         var file = system.getFile(system.user.homeFolder + path);
         var sharePath = system.user.homeFolder + "/Shares/" + file.name;
         file.copyTo(sharePath);
+        
+        var sharedFile = system.getFile(sharePath);
+        sharedFile.modifiedTime = new Date();  // On Windows the mod-time is unchanged when it's copied
 
-        var jsonResponse = system.executeCustomCommand("ShareAPI.ShareFile", [file.name, file.length]);
-        var response = JSON.parse(jsonResponse)
-        urls.push({ name: file.name, url: response.result });
+        var url = system.shares.shareFile(file.name, { expectedFileSize: file.length, password: password });
+        urls.push({ name: file.name, url: url });
     });
     return urls;
 }
