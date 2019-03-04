@@ -140,7 +140,7 @@
             return deferred.promise;
         };
 
-        ApiHandler.prototype.share = function(apiUrl, items) {
+        ApiHandler.prototype.share = function(apiUrl, items, password) {
             // console.log('API call: share');
             var self = this;
             var deferred = $q.defer();
@@ -148,7 +148,8 @@
                 method: 'share',
                 id: 0,
                 params: {
-                    items: items
+                    items: items,
+                    password: password
                 }
             };
 
