@@ -25,8 +25,10 @@
             x = 10;
             
         var y = e.pageY;
-        if (y - $(window).scrollTop() >= window.innerHeight - menu.height())
-            y -= menu.height();
+        var screenY = y - $(window).scrollTop();
+        var menuBottom = screenY + menu.height();
+        if (menuBottom >= window.innerHeight)
+            y = window.innerHeight - menu.height();
         if (y < 10)
             y = 10;
          
