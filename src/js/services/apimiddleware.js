@@ -104,7 +104,8 @@
             var toFilename = item.model.name;
 
             if (item.isFolder()) {
-                return;
+                toFilename += '.zip';
+                itemPath += '.zip';
             }
             
             return this.apiHandler.download(

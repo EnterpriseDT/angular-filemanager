@@ -244,13 +244,16 @@
 
         $scope.download = function() {
             var item = $scope.singleSelection();
-            if ($scope.selectionHas('dir')) {
+            if ($scope.selectionHas('dir') && !$scope.singleSelection())
                 return;
-            }
-            if (item) {
-                return $scope.apiMiddleware.download(item);
-            }
-            return $scope.apiMiddleware.downloadMultiple($scope.temps);
+
+            if (item)
+                $scope.apiMiddleware.download(item);
+            else
+                for (var i in $scope.temps)
+                    $scope.apiMiddleware.download($scope.temps[i]);
+
+            // return $scope.apiMiddleware.downloadMultiple($scope.temps);
         };
 
         $scope.openUrl = function() {

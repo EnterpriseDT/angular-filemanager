@@ -14,6 +14,7 @@
 
         ApiHandler.prototype.deferredHandler = function(response, deferred, code, defaultMsg, headers) {
             var data = response.data ? response.data : response;
+            this.error = null;
             if (!!headers && !!headers['x-completeftp-login']) {
                 // if we're getting this response to a login request then give up a redirect to the login page
                 if (response.config.data.method == 'login')

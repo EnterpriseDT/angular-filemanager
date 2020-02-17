@@ -29,6 +29,7 @@
 
         FileNavigator.prototype.deferredHandler = function(response, deferred, code, defaultMsg, headers) {
             var data = response.data;
+            this.error = null;
             if (!!headers && !!headers['x-completeftp-login']) {
                 this.authenticationErrorHandler();
                 return;
