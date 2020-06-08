@@ -6,12 +6,29 @@
 
         var $storage = $window.localStorage;
         $scope.config = fileManagerConfig;
+
+        // sorting
         $scope.reverse = false;
         $scope.predicate = ['model.type', 'model.name'];
+        var sortInfoStorageKey = 'CFTP_FileManager_sort';
+        var sortInfo = $storage.getItem(sortInfoStorageKey);
+        if (sortInfo) 
+            try {
+                sortInfo = JSON.parse(sortInfo);
+                $scope.predicate[1] = sortInfo.predicate;
+                $scope.reverse = sortInfo.reverse;
+            } catch (e) {
+                console.log(e);
+            }
         $scope.order = function(predicate) {
             $scope.reverse = ($scope.predicate[1] === predicate) ? !$scope.reverse : false;
             $scope.predicate[1] = predicate;
+            $storage.setItem(sortInfoStorageKey, JSON.stringify({
+                predicate: $scope.predicate[1],
+                reverse: $scope.reverse
+            }));
         };
+        
         $scope.query = '';
         var authenticationErrorHandler = function() {
             $scope.onAuthenticationError();
